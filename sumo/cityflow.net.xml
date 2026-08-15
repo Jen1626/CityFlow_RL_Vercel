@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<net version="1.16" junctionCornerDetail="5">
+  <!-- Minimal placeholder network scaffold.
+       Generate/replace with a SUMO-built network for a full experiment. -->
+</net>
