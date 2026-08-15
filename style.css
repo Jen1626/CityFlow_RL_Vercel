@@ -1194,3 +1194,88 @@ footer {
         font-size: 25px;
     }
 }
+/* =========================================================
+   CITYFLOW CAR FIX
+========================================================= */
+
+#cars {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.traffic-car {
+    position: absolute;
+    width: 40px;
+    height: 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transform: translate(-50%, -50%);
+
+    z-index: 10;
+
+    pointer-events: none;
+
+    transition: none !important;
+}
+
+.car-emoji {
+    display: block;
+
+    width: 40px;
+    height: 30px;
+
+    font-family:
+        "Apple Color Emoji",
+        "Segoe UI Emoji",
+        "Noto Color Emoji",
+        sans-serif;
+
+    font-size: 28px;
+    line-height: 30px;
+
+    text-align: center;
+
+    transform-origin: center center;
+
+    user-select: none;
+}
+
+
+/* =========================================================
+   CORRECT CAR DIRECTIONS
+
+   🚗 naturally faces RIGHT
+
+   N = UP
+   S = DOWN
+   W = LEFT
+   E = RIGHT
+========================================================= */
+
+.emergency-car {
+    font-family:
+        "Apple Color Emoji",
+        "Segoe UI Emoji",
+        "Noto Color Emoji",
+        sans-serif;
+
+    font-size: 30px;
+
+    width: 42px;
+    height: 32px;
+
+    line-height: 32px;
+
+    text-align: center;
+
+    z-index: 40;
+
+    pointer-events: none;
+}
