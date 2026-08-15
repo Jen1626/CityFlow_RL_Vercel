@@ -1,85 +1,28 @@
 "use strict";
 
-/*
-=========================================================
- CITYFLOW
- Intelligent Adaptive Traffic Management
-
- FEATURES
- - 🚗 actual car emoji
- - 🚑 emergency vehicle
- - 4 independent traffic lanes
- - NS / EW signal control
- - RED / YELLOW / GREEN phases
- - Fixed lane positions
- - Proper stop lines
- - Physical safety gap
- - No same-lane car overlap
- - Emergency vehicle stops ALL normal traffic
- - Traffic metrics
-=========================================================
-*/
-
-
-/* =====================================================
-   CONFIGURATION
-===================================================== */
+/* =========================================================
+   CITYFLOW - FINAL TRAFFIC SIMULATION
+   ========================================================= */
 
 const CONFIG = {
+    speed: 85,
+    safetyGap: 55,
 
-    CAR_WIDTH: 42,
-    CAR_HEIGHT: 32,
+    greenTime: 8,
+    yellowTime: 2,
 
-    SAFETY_GAP: 30,
+    spawnInterval: 2.2,
 
-    SPEED: 90,
+    maxCars: 18,
 
-    EMERGENCY_SPEED: 120,
-
-    GREEN_TIME: 8,
-
-    YELLOW_TIME: 2,
-
-    SPAWN_INTERVAL: 2200,
-
-    MAX_CARS: 20,
-
-    INITIAL_CARS: 3,
-
-    INITIAL_GAP: 105,
-
-    EMERGENCY_DURATION: 7000
+    carWidth: 40,
+    carHeight: 30
 };
 
 
-/* =====================================================
-   STATE
-===================================================== */
-
-let cars = [];
-
-let nextCarId = 1;
-
-let selectedDirection = "NS";
-
-let signalPhase = "GREEN";
-
-let signalTimer = CONFIG.GREEN_TIME;
-
-let emergencyActive = false;
-
-let emergencyVehicle = null;
-
-let throughput = 0;
-
-let spawnTimer = 0;
-
-let lastTime = performance.now();
-
-
-/* =====================================================
+/* =========================================================
    DOM
-===================================================== */
+========================================================= */
 
 const intersection =
     document.getElementById("intersection");
@@ -87,25 +30,31 @@ const intersection =
 const carsLayer =
     document.getElementById("cars");
 
-const emergencyButton =
+const emergencyBtn =
     document.getElementById("emergencyBtn");
 
+const emergencyCar =
+    document.getElementById("emergencyCar");
 
-/* =====================================================
-   DASHBOARD
-===================================================== */
+const emergencyStatus =
+    document.getElementById("emergencyStatus");
 
-const nsCountEl =
-    document.getElementById("nsCount");
 
-const ewCountEl =
-    document.getElementById("ewCount");
+/* =========================================================
+   STATS
+========================================================= */
 
-const avgNSEl =
-    document.getElementById("avgNS");
+const vehiclesNS =
+    document.getElementById("vehiclesNS");
 
-const avgEWEl =
-    document.getElementById("avgEW");
+const vehiclesEW =
+    document.getElementById("vehiclesEW");
+
+const avgWaitNS =
+    document.getElementById("avgWaitNS");
+
+const avgWaitEW =
+    document.getElementById("avgWaitEW");
 
 const throughputEl =
     document.getElementById("throughput");
@@ -113,66 +62,62 @@ const throughputEl =
 const congestionEl =
     document.getElementById("congestion");
 
-const queueScoreEl =
+const queueScore =
     document.getElementById("queueScore");
 
-const waitingScoreEl =
+const waitingScore =
     document.getElementById("waitingScore");
 
-const congestionScoreEl =
+const congestionScore =
     document.getElementById("congestionScore");
 
-const selectedDirectionEl =
+const selectedDirection =
     document.getElementById("selectedDirection");
 
-const signalTimerEl =
+const signalTimer =
     document.getElementById("signalTimer");
 
-const phaseStatusEl =
-    document.getElementById("phaseStatus");
+const currentPhase =
+    document.getElementById("currentPhase");
 
-const emergencyStatusEl =
-    document.getElementById("emergencyStatus");
+const nsBar =
+    document.getElementById("nsBar");
 
-const priorityStatusEl =
-    document.getElementById("priorityStatus");
+const ewBar =
+    document.getElementById("ewBar");
 
-const nsStatusEl =
-    document.getElementById("nsStatus");
-
-const ewStatusEl =
-    document.getElementById("ewStatus");
-
-const queueNSEl =
-    document.getElementById("queueNS");
-
-const queueEWEl =
-    document.getElementById("queueEW");
-
-const congNSEl =
-    document.getElementById("congNS");
-
-const congEWEl =
-    document.getElementById("congEW");
+const throughputBar =
+    document.getElementById("throughputBar");
 
 
-/* =====================================================
-   SAFETY CHECK
-===================================================== */
+/* =========================================================
+   STATE
+========================================================= */
 
-if (!intersection || !carsLayer) {
+let cars = [];
 
-    throw new Error(
-        "CityFlow: intersection or cars layer missing."
-    );
-}
+let carId = 0;
+
+let selectedAxis = "NS";
+
+let phase = "GREEN";
+
+let timer = CONFIG.greenTime;
+
+let emergencyActive = false;
+
+let throughput = 0;
+
+let spawnClock = 0;
+
+let lastTime = performance.now();
 
 
-/* =====================================================
+/* =========================================================
    GEOMETRY
-===================================================== */
+========================================================= */
 
-function getGeometry() {
+function geometry() {
 
     const width =
         intersection.clientWidth;
@@ -183,7 +128,6 @@ function getGeometry() {
     return {
 
         width,
-
         height,
 
         centerX:
@@ -193,197 +137,256 @@ function getGeometry() {
             height / 2,
 
         roadLeft:
-            width * 0.38,
+            width * 0.35,
 
         roadRight:
-            width * 0.62,
+            width * 0.65,
 
         roadTop:
-            height * 0.38,
+            height * 0.35,
 
         roadBottom:
-            height * 0.62,
+            height * 0.65,
 
-        northStop:
-            height * 0.40,
+        /*
+        Lane centers.
 
-        southStop:
-            height * 0.60,
+        Vertical road:
+        left lane  = 42.5%
+        right lane = 57.5%
 
-        westStop:
-            width * 0.40,
+        Horizontal road:
+        upper lane = 42.5%
+        lower lane = 57.5%
+        */
 
-        eastStop:
-            width * 0.60
+        northSouthLeft:
+            width * 0.425,
+
+        northSouthRight:
+            width * 0.575,
+
+        eastWestTop:
+            height * 0.425,
+
+        eastWestBottom:
+            height * 0.575
     };
 }
 
 
-/* =====================================================
-   LANE POSITIONS
-=====================================================
+/* =========================================================
+   CREATE CAR
+========================================================= */
 
- N = enters from NORTH, moves DOWN
- S = enters from SOUTH, moves UP
- W = enters from WEST, moves RIGHT
- E = enters from EAST, moves LEFT
+function createCar(direction, offset = 0) {
 
-===================================================== */
-
-function getLanePosition(direction) {
+    if (
+        cars.length >=
+        CONFIG.maxCars
+    ) {
+        return null;
+    }
 
     const g =
-        getGeometry();
+        geometry();
 
-    const laneOffset = 30;
+    const el =
+        document.createElement("div");
 
-    if (direction === "N") {
+    el.className =
+        "traffic-car";
 
-        return {
-            x:
-                g.centerX - laneOffset,
-            y: 0
-        };
-    }
+    /*
+    IMPORTANT:
+    We rotate ONLY the emoji.
 
-    if (direction === "S") {
+    This prevents the position box from
+    rotating and causing diagonal movement.
+    */
 
-        return {
-            x:
-                g.centerX + laneOffset,
-            y: 0
-        };
-    }
+    el.innerHTML =
+        `<span class="car-emoji">🚗</span>`;
 
-    if (direction === "W") {
+    const car = {
 
-        return {
-            x: 0,
-            y:
-                g.centerY - laneOffset
-        };
-    }
+        id:
+            ++carId,
 
-    return {
+        direction,
 
         x: 0,
 
-        y:
-            g.centerY + laneOffset
+        y: 0,
+
+        wait: 0,
+
+        crossed: false,
+
+        element: el
     };
-}
 
 
-/* =====================================================
-   DIRECTION HELPERS
-===================================================== */
+    /* =====================================================
+       INITIAL POSITION
+    ===================================================== */
 
-function isPositiveDirection(direction) {
+    if (
+        direction === "N"
+    ) {
 
-    return (
-        direction === "N" ||
+        car.x =
+            g.northSouthLeft;
+
+        car.y =
+            -60 -
+            offset;
+    }
+
+
+    else if (
+        direction === "S"
+    ) {
+
+        car.x =
+            g.northSouthRight;
+
+        car.y =
+            g.height +
+            60 +
+            offset;
+    }
+
+
+    else if (
         direction === "W"
-    );
+    ) {
+
+        car.x =
+            -60 -
+            offset;
+
+        car.y =
+            g.eastWestTop;
+    }
+
+
+    else if (
+        direction === "E"
+    ) {
+
+        car.x =
+            g.width +
+            60 +
+            offset;
+
+        car.y =
+            g.eastWestBottom;
+    }
+
+
+    carsLayer.appendChild(el);
+
+    cars.push(car);
+
+    drawCar(car);
+
+    return car;
 }
 
 
-function isVertical(direction) {
+/* =========================================================
+   DRAW CAR
+========================================================= */
 
-    return (
-        direction === "N" ||
-        direction === "S"
-    );
-}
+function drawCar(car) {
 
+    car.element.style.left =
+        `${car.x}px`;
 
-function axisOf(direction) {
+    car.element.style.top =
+        `${car.y}px`;
 
-    return (
-        direction === "N" ||
-        direction === "S"
-    )
-        ? "NS"
-        : "EW";
-}
-
-
-function vehicleLength(direction) {
-
-    return isVertical(direction)
-        ? CONFIG.CAR_HEIGHT
-        : CONFIG.CAR_WIDTH;
-}
-
-
-/* =====================================================
-   STOP LINE POSITION
-===================================================== */
-
-function getStopPosition(direction) {
-
-    const g =
-        getGeometry();
 
     /*
-    Position is the TOP/LEFT coordinate
-    of the car.
+    Correct physical orientation:
+
+    N = car facing UP
+    S = car facing DOWN
+    W = car facing LEFT
+    E = car facing RIGHT
     */
 
-    if (direction === "N") {
-
-        return (
-            g.northStop -
-            CONFIG.CAR_HEIGHT -
-            10
+    const emoji =
+        car.element.querySelector(
+            ".car-emoji"
         );
+
+    if (!emoji) {
+        return;
     }
 
 
-    if (direction === "S") {
+    let rotation = 0;
 
-        return (
-            g.southStop +
-            10
-        );
+
+    if (
+        car.direction === "N"
+    ) {
+
+        rotation = -90;
+    }
+
+    else if (
+        car.direction === "S"
+    ) {
+
+        rotation = 90;
+    }
+
+    else if (
+        car.direction === "W"
+    ) {
+
+        rotation = 180;
+    }
+
+    else if (
+        car.direction === "E"
+    ) {
+
+        rotation = 0;
     }
 
 
-    if (direction === "W") {
-
-        return (
-            g.westStop -
-            CONFIG.CAR_WIDTH -
-            10
-        );
-    }
-
-
-    return (
-        g.eastStop +
-        10
-    );
+    emoji.style.transform =
+        `rotate(${rotation}deg)`;
 }
 
 
-/* =====================================================
+/* =========================================================
    PROGRESS
+========================================================= */
 
-   Larger progress = further along the road.
-===================================================== */
+function progress(car) {
 
-function getProgress(car) {
-
-    if (car.direction === "N") {
+    if (
+        car.direction === "N"
+    ) {
 
         return car.y;
     }
 
-    if (car.direction === "S") {
+    if (
+        car.direction === "S"
+    ) {
 
         return -car.y;
     }
 
-    if (car.direction === "W") {
+    if (
+        car.direction === "W"
+    ) {
 
         return car.x;
     }
@@ -392,223 +395,15 @@ function getProgress(car) {
 }
 
 
-/* =====================================================
-   CREATE CAR ELEMENT
-===================================================== */
-
-function createCarElement(direction) {
-
-    const element =
-        document.createElement("div");
-
-    element.className =
-        "traffic-car";
-
-    element.innerHTML =
-        '<span class="car-emoji">🚗</span>';
-
-    /*
-    Emoji naturally faces RIGHT.
-
-    N = moving DOWN  -> rotate 90
-    S = moving UP    -> rotate -90
-    W = moving RIGHT -> rotate 0
-    E = moving LEFT  -> rotate 180
-    */
-
-    let rotation = 0;
-
-    if (direction === "N") {
-
-        rotation = 90;
-    }
-
-    else if (direction === "S") {
-
-        rotation = -90;
-    }
-
-    else if (direction === "W") {
-
-        rotation = 0;
-    }
-
-    else if (direction === "E") {
-
-        rotation = 180;
-    }
-
-    element.dataset.rotation =
-        rotation;
-
-    return element;
-}
-
-
-/* =====================================================
-   CREATE CAR
-===================================================== */
-
-function createCar(
-    direction,
-    distanceFromEntry = 0
-) {
-
-    if (
-        cars.length >=
-        CONFIG.MAX_CARS
-    ) {
-
-        return null;
-    }
-
-
-    const g =
-        getGeometry();
-
-    const lane =
-        getLanePosition(direction);
-
-    const car = {
-
-        id:
-            nextCarId++,
-
-        direction,
-
-        axis:
-            axisOf(direction),
-
-        x:
-            lane.x,
-
-        y:
-            lane.y,
-
-        wait:
-            0,
-
-        stopped:
-            false,
-
-        crossedStop:
-            false,
-
-        element:
-            createCarElement(direction)
-    };
-
-
-    /*
-    ============================================
-    INITIAL POSITION
-    ============================================
-    */
-
-    if (direction === "N") {
-
-        car.x =
-            lane.x -
-            CONFIG.CAR_WIDTH / 2;
-
-        car.y =
-            -CONFIG.CAR_HEIGHT -
-            distanceFromEntry;
-    }
-
-
-    else if (direction === "S") {
-
-        car.x =
-            lane.x -
-            CONFIG.CAR_WIDTH / 2;
-
-        car.y =
-            g.height +
-            distanceFromEntry;
-    }
-
-
-    else if (direction === "W") {
-
-        car.x =
-            -CONFIG.CAR_WIDTH -
-            distanceFromEntry;
-
-        car.y =
-            lane.y -
-            CONFIG.CAR_HEIGHT / 2;
-    }
-
-
-    else {
-
-        car.x =
-            g.width +
-            distanceFromEntry;
-
-        car.y =
-            lane.y -
-            CONFIG.CAR_HEIGHT / 2;
-    }
-
-
-    /*
-    ADD TO DOM
-    */
-
-    carsLayer.appendChild(
-        car.element
-    );
-
-    cars.push(car);
-
-    renderCar(car);
-
-    return car;
-}
-
-
-/* =====================================================
-   RENDER CAR
-===================================================== */
-
-function renderCar(car) {
-
-    if (
-        !car ||
-        !car.element
-    ) {
-
-        return;
-    }
-
-
-    car.element.style.left =
-        Math.round(car.x) + "px";
-
-    car.element.style.top =
-        Math.round(car.y) + "px";
-
-
-    const rotation =
-        car.element.dataset.rotation ||
-        0;
-
-    car.element.style.transform =
-        `translate(-50%, -50%) rotate(${rotation}deg)`;
-}
-
-
-/* =====================================================
-   GET CAR AHEAD
-===================================================== */
-
-function getCarAhead(car) {
+/* =========================================================
+   CAR AHEAD
+========================================================= */
+
+function carAhead(car) {
 
     let nearest = null;
 
-    let smallestDistance =
+    let nearestDistance =
         Infinity;
 
 
@@ -619,32 +414,29 @@ function getCarAhead(car) {
         if (
             other === car
         ) {
-
             continue;
         }
-
 
         if (
             other.direction !==
             car.direction
         ) {
-
             continue;
         }
 
 
         const distance =
-            getProgress(other) -
-            getProgress(car);
+            progress(other) -
+            progress(car);
 
 
         if (
             distance > 0 &&
             distance <
-                smallestDistance
+                nearestDistance
         ) {
 
-            smallestDistance =
+            nearestDistance =
                 distance;
 
             nearest =
@@ -657,52 +449,80 @@ function getCarAhead(car) {
 }
 
 
-/* =====================================================
-   SIGNAL ALLOWS MOVEMENT
-===================================================== */
+/* =========================================================
+   STOP LINE
+========================================================= */
 
-function signalAllowsCar(car) {
+function stopPosition(car) {
 
-    /*
-    Emergency:
-    EVERYTHING STOPS.
-    */
-
-    if (emergencyActive) {
-
-        return false;
-    }
+    const g =
+        geometry();
 
 
     /*
-    Yellow means no new cars
-    enter the intersection.
+    N = moving DOWN
     */
 
     if (
-        signalPhase !==
-        "GREEN"
+        car.direction === "N"
     ) {
 
-        return false;
+        return (
+            g.roadTop -
+            12
+        );
     }
 
 
+    /*
+    S = moving UP
+    */
+
+    if (
+        car.direction === "S"
+    ) {
+
+        return (
+            g.roadBottom +
+            12
+        );
+    }
+
+
+    /*
+    W = moving RIGHT
+    */
+
+    if (
+        car.direction === "W"
+    ) {
+
+        return (
+            g.roadLeft -
+            12
+        );
+    }
+
+
+    /*
+    E = moving LEFT
+    */
+
     return (
-        axisOf(car.direction) ===
-        selectedDirection
+        g.roadRight +
+        12
     );
 }
 
 
-/* =====================================================
-   HAS CAR PASSED STOP LINE?
-===================================================== */
+/* =========================================================
+   HAS PASSED STOP LINE
+========================================================= */
 
 function hasPassedStop(car) {
 
     const g =
-        getGeometry();
+        geometry();
 
 
     if (
@@ -710,8 +530,8 @@ function hasPassedStop(car) {
     ) {
 
         return (
-            car.y >=
-            g.northStop
+            car.y >
+            g.roadTop + 35
         );
     }
 
@@ -721,9 +541,8 @@ function hasPassedStop(car) {
     ) {
 
         return (
-            car.y +
-            CONFIG.CAR_HEIGHT <=
-            g.southStop
+            car.y <
+            g.roadBottom - 35
         );
     }
 
@@ -733,386 +552,415 @@ function hasPassedStop(car) {
     ) {
 
         return (
-            car.x >=
-            g.westStop
+            car.x >
+            g.roadLeft + 35
         );
     }
 
 
     return (
-        car.x +
-        CONFIG.CAR_WIDTH <=
-        g.eastStop
+        car.x <
+        g.roadRight - 35
     );
 }
 
 
-/* =====================================================
-   STOP AT SIGNAL
-===================================================== */
+/* =========================================================
+   SIGNAL ALLOWS MOVEMENT
+========================================================= */
 
-function getSignalSafePosition(car) {
-
-    if (
-        car.crossedStop
-    ) {
-
-        return null;
-    }
-
-
-    if (
-        signalAllowsCar(car)
-    ) {
-
-        return null;
-    }
-
-
-    return getStopPosition(
-        car.direction
-    );
-}
-
-
-/* =====================================================
-   GET SAFE POSITION BEHIND LEADER
-===================================================== */
-
-function getLeaderSafePosition(
-    car,
-    desiredPosition
-) {
-
-    const leader =
-        getCarAhead(car);
-
-
-    if (!leader) {
-
-        return desiredPosition;
-    }
-
-
-    const gap =
-        CONFIG.SAFETY_GAP;
-
-
-    const length =
-        vehicleLength(
-            car.direction
-        );
-
+function signalAllows(car) {
 
     /*
-    N / W move toward increasing
-    coordinates.
+    Emergency:
+    absolutely everything stops.
     */
 
     if (
-        isPositiveDirection(
-            car.direction
-        )
+        emergencyActive
     ) {
-
-        const maximum =
-            getProgress(leader) -
-            length -
-            gap;
-
-        return Math.min(
-            desiredPosition,
-            maximum
-        );
+        return false;
     }
 
 
     /*
-    S / E move toward decreasing
-    coordinates.
+    Once a car has entered the
+    intersection, allow it to finish.
     */
 
-    const maximum =
-        (
-            car.direction === "S"
-                ? leader.y +
-                  CONFIG.CAR_HEIGHT +
-                  gap
-                : leader.x +
-                  CONFIG.CAR_WIDTH +
-                  gap
-        );
+    if (
+        car.crossed
+    ) {
+        return true;
+    }
 
 
-    return Math.max(
-        desiredPosition,
-        maximum
-    );
+    /*
+    Yellow means STOP new traffic.
+    */
+
+    if (
+        phase !== "GREEN"
+    ) {
+        return false;
+    }
+
+
+    if (
+        car.direction === "N" ||
+        car.direction === "S"
+    ) {
+
+        return selectedAxis === "NS";
+    }
+
+
+    return selectedAxis === "EW";
 }
 
 
-/* =====================================================
+/* =========================================================
    UPDATE CAR
-===================================================== */
+========================================================= */
 
-function updateCar(
-    car,
-    dt
-) {
-
-    if (
-        !car ||
-        !car.element
-    ) {
-
-        return;
-    }
-
+function updateCar(car, dt) {
 
     /*
-    ============================================
-    EMERGENCY MODE
-    ============================================
+    Emergency:
+    freeze every normal car.
     */
 
     if (
         emergencyActive
     ) {
 
-        car.stopped =
-            true;
+        car.wait += dt;
 
-        car.wait +=
-            dt;
-
-        renderCar(car);
+        drawCar(car);
 
         return;
     }
 
 
     /*
-    ============================================
-    CURRENT POSITION
-    ============================================
-    */
-
-    const oldPosition =
-        isVertical(car.direction)
-            ? car.y
-            : car.x;
-
-
-    /*
-    ============================================
-    DESIRED MOVEMENT
-    ============================================
-    */
-
-    const movement =
-        CONFIG.SPEED *
-        dt;
-
-
-    let desired =
-        oldPosition;
-
-
-    if (
-        isPositiveDirection(
-            car.direction
-        )
-    ) {
-
-        desired +=
-            movement;
-
-    }
-
-    else {
-
-        desired -=
-            movement;
-    }
-
-
-    /*
-    ============================================
-    STOP LINE
-    ============================================
-    */
-
-    const signalStop =
-        getSignalSafePosition(
-            car
-        );
-
-
-    if (
-        signalStop !== null
-    ) {
-
-        if (
-            isPositiveDirection(
-                car.direction
-            )
-        ) {
-
-            desired =
-                Math.min(
-                    desired,
-                    signalStop
-                );
-
-        }
-
-        else {
-
-            desired =
-                Math.max(
-                    desired,
-                    signalStop
-                );
-        }
-    }
-
-
-    /*
-    ============================================
-    SAFETY GAP
-    ============================================
-    */
-
-    desired =
-        getLeaderSafePosition(
-            car,
-            desired
-        );
-
-
-    /*
-    ============================================
-    NEVER MOVE BACKWARD
-    ============================================
-    */
-
-    let newPosition;
-
-
-    if (
-        isPositiveDirection(
-            car.direction
-        )
-    ) {
-
-        newPosition =
-            Math.max(
-                oldPosition,
-                desired
-            );
-
-    }
-
-    else {
-
-        newPosition =
-            Math.min(
-                oldPosition,
-                desired
-            );
-    }
-
-
-    /*
-    ============================================
-    APPLY POSITION
-    ============================================
-    */
-
-    if (
-        isVertical(
-            car.direction
-        )
-    ) {
-
-        car.y =
-            newPosition;
-
-    }
-
-    else {
-
-        car.x =
-            newPosition;
-    }
-
-
-    /*
-    ============================================
-    STOP STATUS
-    ============================================
-    */
-
-    car.stopped =
-        Math.abs(
-            newPosition -
-            oldPosition
-        ) < 0.05;
-
-
-    if (
-        car.stopped
-    ) {
-
-        car.wait +=
-            dt;
-
-    }
-
-    else {
-
-        /*
-        Slowly reduce waiting time
-        once vehicle moves.
-        */
-
-        car.wait *=
-            0.98;
-    }
-
-
-    /*
-    ============================================
-    STOP LINE PASSED
-    ============================================
+    If car passed the stop line,
+    it is now inside/after intersection.
     */
 
     if (
         hasPassedStop(car)
     ) {
 
-        car.crossedStop =
-            true;
+        car.crossed = true;
     }
 
 
-    renderCar(car);
+    let movement =
+        CONFIG.speed * dt;
+
+
+    let newPosition;
 
 
     /*
-    ============================================
-    REMOVE CAR AFTER EXIT
-    ============================================
+    ==========================================
+    N
+    ==========================================
+    */
+
+    if (
+        car.direction === "N"
+    ) {
+
+        newPosition =
+            car.y + movement;
+
+
+        /*
+        Red / yellow stop line.
+        */
+
+        if (
+            !car.crossed &&
+            !signalAllows(car)
+        ) {
+
+            newPosition =
+                Math.min(
+                    newPosition,
+                    stopPosition(car)
+                );
+        }
+
+
+        /*
+        Safety gap.
+        */
+
+        const front =
+            carAhead(car);
+
+
+        if (
+            front
+        ) {
+
+            const maxPosition =
+                front.y -
+                CONFIG.safetyGap;
+
+
+            newPosition =
+                Math.min(
+                    newPosition,
+                    maxPosition
+                );
+        }
+
+
+        if (
+            newPosition <=
+            car.y + 0.5
+        ) {
+
+            car.wait += dt;
+
+        } else {
+
+            car.wait *= 0.98;
+        }
+
+
+        car.y =
+            Math.max(
+                car.y,
+                newPosition
+            );
+    }
+
+
+    /*
+    ==========================================
+    S
+    ==========================================
+    */
+
+    else if (
+        car.direction === "S"
+    ) {
+
+        newPosition =
+            car.y - movement;
+
+
+        if (
+            !car.crossed &&
+            !signalAllows(car)
+        ) {
+
+            newPosition =
+                Math.max(
+                    newPosition,
+                    stopPosition(car)
+                );
+        }
+
+
+        const front =
+            carAhead(car);
+
+
+        if (
+            front
+        ) {
+
+            const minPosition =
+                front.y +
+                CONFIG.safetyGap;
+
+
+            newPosition =
+                Math.max(
+                    newPosition,
+                    minPosition
+                );
+        }
+
+
+        if (
+            newPosition >=
+            car.y - 0.5
+        ) {
+
+            car.wait += dt;
+
+        } else {
+
+            car.wait *= 0.98;
+        }
+
+
+        car.y =
+            Math.min(
+                car.y,
+                newPosition
+            );
+    }
+
+
+    /*
+    ==========================================
+    W
+    ==========================================
+    */
+
+    else if (
+        car.direction === "W"
+    ) {
+
+        newPosition =
+            car.x + movement;
+
+
+        if (
+            !car.crossed &&
+            !signalAllows(car)
+        ) {
+
+            newPosition =
+                Math.min(
+                    newPosition,
+                    stopPosition(car)
+                );
+        }
+
+
+        const front =
+            carAhead(car);
+
+
+        if (
+            front
+        ) {
+
+            const maxPosition =
+                front.x -
+                CONFIG.safetyGap;
+
+
+            newPosition =
+                Math.min(
+                    newPosition,
+                    maxPosition
+                );
+        }
+
+
+        if (
+            newPosition <=
+            car.x + 0.5
+        ) {
+
+            car.wait += dt;
+
+        } else {
+
+            car.wait *= 0.98;
+        }
+
+
+        car.x =
+            Math.max(
+                car.x,
+                newPosition
+            );
+    }
+
+
+    /*
+    ==========================================
+    E
+    ==========================================
+    */
+
+    else {
+
+        newPosition =
+            car.x - movement;
+
+
+        if (
+            !car.crossed &&
+            !signalAllows(car)
+        ) {
+
+            newPosition =
+                Math.max(
+                    newPosition,
+                    stopPosition(car)
+                );
+        }
+
+
+        const front =
+            carAhead(car);
+
+
+        if (
+            front
+        ) {
+
+            const minPosition =
+                front.x +
+                CONFIG.safetyGap;
+
+
+            newPosition =
+                Math.max(
+                    newPosition,
+                    minPosition
+                );
+        }
+
+
+        if (
+            newPosition >=
+            car.x - 0.5
+        ) {
+
+            car.wait += dt;
+
+        } else {
+
+            car.wait *= 0.98;
+        }
+
+
+        car.x =
+            Math.min(
+                car.x,
+                newPosition
+            );
+    }
+
+
+    drawCar(car);
+
+
+    /*
+    ==========================================
+    REMOVE WHEN OUT OF SCREEN
+    ==========================================
     */
 
     const g =
-        getGeometry();
+        geometry();
 
 
     if (
         car.direction === "N" &&
         car.y >
-            g.height + 80
+            g.height + 70
     ) {
 
         removeCar(car);
@@ -1124,7 +972,7 @@ function updateCar(
     if (
         car.direction === "S" &&
         car.y <
-            -100
+            -70
     ) {
 
         removeCar(car);
@@ -1136,7 +984,7 @@ function updateCar(
     if (
         car.direction === "W" &&
         car.x >
-            g.width + 80
+            g.width + 70
     ) {
 
         removeCar(car);
@@ -1148,7 +996,7 @@ function updateCar(
     if (
         car.direction === "E" &&
         car.x <
-            -100
+            -70
     ) {
 
         removeCar(car);
@@ -1158,9 +1006,9 @@ function updateCar(
 }
 
 
-/* =====================================================
+/* =========================================================
    REMOVE CAR
-===================================================== */
+========================================================= */
 
 function removeCar(car) {
 
@@ -1174,7 +1022,8 @@ function removeCar(car) {
 
     cars =
         cars.filter(
-            c => c !== car
+            c =>
+                c !== car
         );
 
 
@@ -1182,1221 +1031,11 @@ function removeCar(car) {
 }
 
 
-/* =====================================================
-   INITIAL TRAFFIC
-===================================================== */
-
-function createInitialTraffic() {
-
-    /*
-    Three cars per lane.
-    They begin with a large gap.
-    */
-
-    for (
-        let i = 0;
-        i < CONFIG.INITIAL_CARS;
-        i++
-    ) {
-
-        const distance =
-            i *
-            CONFIG.INITIAL_GAP;
-
-
-        createCar(
-            "N",
-            distance
-        );
-
-
-        createCar(
-            "S",
-            distance
-        );
-
-
-        createCar(
-            "W",
-            distance
-        );
-
-
-        createCar(
-            "E",
-            distance
-        );
-    }
-}
-
-
-/* =====================================================
-   SPAWN SAFETY CHECK
-===================================================== */
-
-function canSpawn(direction) {
-
-    const g =
-        getGeometry();
-
-
-    for (
-        const car of cars
-    ) {
-
-        if (
-            car.direction !==
-            direction
-        ) {
-
-            continue;
-        }
-
-
-        /*
-        Check entrance region.
-        */
-
-        if (
-            direction === "N"
-        ) {
-
-            if (
-                car.y <
-                100
-            ) {
-
-                return false;
-            }
-        }
-
-
-        else if (
-            direction === "S"
-        ) {
-
-            if (
-                car.y >
-                g.height - 100
-            ) {
-
-                return false;
-            }
-        }
-
-
-        else if (
-            direction === "W"
-        ) {
-
-            if (
-                car.x <
-                100
-            ) {
-
-                return false;
-            }
-        }
-
-
-        else {
-
-            if (
-                car.x >
-                g.width - 100
-            ) {
-
-                return false;
-            }
-        }
-    }
-
-
-    return true;
-}
-
-
-/* =====================================================
-   SPAWN TRAFFIC
-===================================================== */
-
-function spawnTraffic() {
-
-    if (
-        emergencyActive
-    ) {
-
-        return;
-    }
-
-
-    if (
-        cars.length >=
-        CONFIG.MAX_CARS
-    ) {
-
-        return;
-    }
-
-
-    const directions = [
-        "N",
-        "S",
-        "W",
-        "E"
-    ];
-
-
-    /*
-    Prefer the direction with
-    fewer vehicles.
-    */
-
-    const counts = {
-
-        N: 0,
-        S: 0,
-        W: 0,
-        E: 0
-    };
-
-
-    for (
-        const car of cars
-    ) {
-
-        counts[
-            car.direction
-        ]++;
-    }
-
-
-    const available =
-        directions.filter(
-            direction =>
-                canSpawn(
-                    direction
-                )
-        );
-
-
-    if (
-        available.length === 0
-    ) {
-
-        return;
-    }
-
-
-    available.sort(
-        (a, b) =>
-            counts[a] -
-            counts[b]
-    );
-
-
-    const direction =
-        available[0];
-
-
-    createCar(
-        direction,
-        0
-    );
-}
-
-
-/* =====================================================
-   SIGNAL LIGHT HELPERS
-===================================================== */
-
-function setLight(
-    id,
-    active
-) {
-
-    const element =
-        document.getElementById(id);
-
-    if (!element) {
-
-        return;
-    }
-
-
-    element.classList.toggle(
-        "active",
-        active
-    );
-}
-
-
-/* =====================================================
-   UPDATE SIGNAL LIGHTS
-===================================================== */
-
-function updateSignalLights() {
-
-    const allLights = [
-        "nRed",
-        "nYellow",
-        "nGreen",
-        "sRed",
-        "sYellow",
-        "sGreen",
-        "eRed",
-        "eYellow",
-        "eGreen",
-        "wRed",
-        "wYellow",
-        "wGreen"
-    ];
-
-
-    /*
-    First turn everything off.
-    */
-
-    allLights.forEach(
-        id =>
-            setLight(
-                id,
-                false
-            )
-    );
-
-
-    /*
-    EMERGENCY:
-    all signals RED.
-    */
-
-    if (
-        emergencyActive
-    ) {
-
-        setLight(
-            "nRed",
-            true
-        );
-
-        setLight(
-            "sRed",
-            true
-        );
-
-        setLight(
-            "eRed",
-            true
-        );
-
-        setLight(
-            "wRed",
-            true
-        );
-
-        return;
-    }
-
-
-    /*
-    NS selected.
-    */
-
-    if (
-        selectedDirection ===
-        "NS"
-    ) {
-
-        if (
-            signalPhase ===
-            "GREEN"
-        ) {
-
-            setLight(
-                "nGreen",
-                true
-            );
-
-            setLight(
-                "sGreen",
-                true
-            );
-
-            setLight(
-                "eRed",
-                true
-            );
-
-            setLight(
-                "wRed",
-                true
-            );
-        }
-
-
-        else {
-
-            setLight(
-                "nYellow",
-                true
-            );
-
-            setLight(
-                "sYellow",
-                true
-            );
-
-            setLight(
-                "eRed",
-                true
-            );
-
-            setLight(
-                "wRed",
-                true
-            );
-        }
-
-        return;
-    }
-
-
-    /*
-    EW selected.
-    */
-
-    if (
-        signalPhase ===
-        "GREEN"
-    ) {
-
-        setLight(
-            "eGreen",
-            true
-        );
-
-        setLight(
-            "wGreen",
-            true
-        );
-
-        setLight(
-            "nRed",
-            true
-        );
-
-        setLight(
-            "sRed",
-            true
-        );
-
-    }
-
-    else {
-
-        setLight(
-            "eYellow",
-            true
-        );
-
-        setLight(
-            "wYellow",
-            true
-        );
-
-        setLight(
-            "nRed",
-            true
-        );
-
-        setLight(
-            "sRed",
-            true
-        );
-    }
-}
-
-
-/* =====================================================
-   UPDATE SIGNAL TIMER
-===================================================== */
-
-function updateSignal(
-    dt
-) {
-
-    if (
-        emergencyActive
-    ) {
-
-        return;
-    }
-
-
-    signalTimer -=
-        dt;
-
-
-    if (
-        signalTimer > 0
-    ) {
-
-        return;
-    }
-
-
-    /*
-    GREEN -> YELLOW
-    */
-
-    if (
-        signalPhase ===
-        "GREEN"
-    ) {
-
-        signalPhase =
-            "YELLOW";
-
-        signalTimer =
-            CONFIG.YELLOW_TIME;
-
-        updateSignalLights();
-
-        return;
-    }
-
-
-    /*
-    YELLOW -> OTHER DIRECTION
-    */
-
-    selectedDirection =
-        selectedDirection === "NS"
-            ? "EW"
-            : "NS";
-
-
-    signalPhase =
-        "GREEN";
-
-    signalTimer =
-        CONFIG.GREEN_TIME;
-
-
-    updateSignalLights();
-}
-
-
-/* =====================================================
-   EMERGENCY VEHICLE
-===================================================== */
-
-function createEmergencyVehicle() {
-
-    if (
-        emergencyVehicle
-    ) {
-
-        return;
-    }
-
-
-    const g =
-        getGeometry();
-
-
-    const ambulance =
-        document.createElement(
-            "div"
-        );
-
-
-    ambulance.className =
-        "emergency-car";
-
-
-    ambulance.textContent =
-        "🚑";
-
-
-    ambulance.style.position =
-        "absolute";
-
-
-    ambulance.style.width =
-        "42px";
-
-
-    ambulance.style.height =
-        "32px";
-
-
-    ambulance.style.fontSize =
-        "30px";
-
-
-    ambulance.style.lineHeight =
-        "32px";
-
-
-    ambulance.style.textAlign =
-        "center";
-
-
-    ambulance.style.zIndex =
-        "100";
-
-
-    /*
-    Start from SOUTH.
-    Move NORTH.
-    */
-
-    ambulance.style.left =
-        (
-            g.centerX +
-            30
-        ) + "px";
-
-
-    ambulance.style.top =
-        (
-            g.height +
-            40
-        ) + "px";
-
-
-    ambulance.style.transform =
-        "translate(-50%, -50%) rotate(-90deg)";
-
-
-    carsLayer.appendChild(
-        ambulance
-    );
-
-
-    emergencyVehicle = {
-
-        element:
-            ambulance,
-
-        x:
-            g.centerX + 30,
-
-        y:
-            g.height + 40
-    };
-}
-
-
-/* =====================================================
-   TRIGGER EMERGENCY
-===================================================== */
-
-function triggerEmergency() {
-
-    if (
-        emergencyActive
-    ) {
-
-        return;
-    }
-
-
-    emergencyActive =
-        true;
-
-
-    createEmergencyVehicle();
-
-
-    /*
-    Freeze every normal car.
-    */
-
-    for (
-        const car of cars
-    ) {
-
-        car.stopped =
-            true;
-    }
-
-
-    /*
-    Emergency status.
-    */
-
-    if (
-        emergencyStatusEl
-    ) {
-
-        emergencyStatusEl.textContent =
-            "ACTIVE — ALL TRAFFIC STOPPED";
-
-        emergencyStatusEl.className =
-            "status-active";
-    }
-
-
-    if (
-        priorityStatusEl
-    ) {
-
-        priorityStatusEl.textContent =
-            "EMERGENCY ACTIVE";
-
-        priorityStatusEl.className =
-            "status-active";
-    }
-
-
-    updateSignalLights();
-
-
-    /*
-    End emergency after
-    configured duration.
-    */
-
-    setTimeout(
-        endEmergency,
-        CONFIG.EMERGENCY_DURATION
-    );
-}
-
-
-/* =====================================================
-   END EMERGENCY
-===================================================== */
-
-function endEmergency() {
-
-    emergencyActive =
-        false;
-
-
-    if (
-        emergencyVehicle
-    ) {
-
-        if (
-            emergencyVehicle.element
-        ) {
-
-            emergencyVehicle
-                .element
-                .remove();
-        }
-
-
-        emergencyVehicle =
-            null;
-    }
-
-
-    if (
-        emergencyStatusEl
-    ) {
-
-        emergencyStatusEl.textContent =
-            "NONE";
-
-        emergencyStatusEl.className =
-            "";
-    }
-
-
-    if (
-        priorityStatusEl
-    ) {
-
-        priorityStatusEl.textContent =
-            "STANDBY";
-
-        priorityStatusEl.className =
-            "status-none";
-    }
-
-
-    /*
-    Restart the selected signal.
-    */
-
-    signalPhase =
-        "GREEN";
-
-    signalTimer =
-        CONFIG.GREEN_TIME;
-
-
-    updateSignalLights();
-}
-
-
-/* =====================================================
-   UPDATE EMERGENCY VEHICLE
-===================================================== */
-
-function updateEmergency(
-    dt
-) {
-
-    if (
-        !emergencyActive ||
-        !emergencyVehicle
-    ) {
-
-        return;
-    }
-
-
-    const g =
-        getGeometry();
-
-
-    emergencyVehicle.y -=
-        CONFIG.EMERGENCY_SPEED *
-        dt;
-
-
-    emergencyVehicle.element.style.top =
-        Math.round(
-            emergencyVehicle.y
-        ) + "px";
-
-
-    /*
-    Emergency vehicle exits
-    from the top.
-    */
-
-    if (
-        emergencyVehicle.y <
-        -60
-    ) {
-
-        if (
-            emergencyVehicle.element
-        ) {
-
-            emergencyVehicle
-                .element
-                .remove();
-        }
-
-
-        emergencyVehicle =
-            null;
-    }
-}
-
-
-/* =====================================================
-   WAITING METRICS
-===================================================== */
-
-function averageWait(
-    list
-) {
-
-    if (
-        list.length === 0
-    ) {
-
-        return 0;
-    }
-
-
-    let total = 0;
-
-
-    for (
-        const car of list
-    ) {
-
-        total +=
-            car.wait;
-    }
-
-
-    return (
-        total /
-        list.length
-    );
-}
-
-
-/* =====================================================
-   UPDATE METRICS
-===================================================== */
-
-function updateMetrics() {
-
-    const nsCars =
-        cars.filter(
-            car =>
-                car.axis ===
-                "NS"
-        );
-
-
-    const ewCars =
-        cars.filter(
-            car =>
-                car.axis ===
-                "EW"
-        );
-
-
-    const nsWaiting =
-        nsCars.filter(
-            car =>
-                car.stopped
-        );
-
-
-    const ewWaiting =
-        ewCars.filter(
-            car =>
-                car.stopped
-        );
-
-
-    const nsWait =
-        averageWait(
-            nsCars
-        );
-
-
-    const ewWait =
-        averageWait(
-            ewCars
-        );
-
-
-    const queueScore =
-        cars.length * 3;
-
-
-    const waitingScore =
-        (
-            nsWaiting.length +
-            ewWaiting.length
-        ) * 0.5;
-
-
-    const congestionScore =
-        Math.min(
-            100,
-            (
-                cars.length * 1.8
-            ) +
-            (
-                (
-                    nsWaiting.length +
-                    ewWaiting.length
-                ) * 0.7
-            )
-        );
-
-
-    /*
-    TOP STATISTICS
-    */
-
-    if (
-        nsCountEl
-    ) {
-
-        nsCountEl.textContent =
-            nsCars.length;
-    }
-
-
-    if (
-        ewCountEl
-    ) {
-
-        ewCountEl.textContent =
-            ewCars.length;
-    }
-
-
-    if (
-        avgNSEl
-    ) {
-
-        avgNSEl.textContent =
-            nsWait.toFixed(1) +
-            "s";
-    }
-
-
-    if (
-        avgEWEl
-    ) {
-
-        avgEWEl.textContent =
-            ewWait.toFixed(1) +
-            "s";
-    }
-
-
-    if (
-        throughputEl
-    ) {
-
-        throughputEl.textContent =
-            throughput;
-    }
-
-
-    if (
-        congestionEl
-    ) {
-
-        if (
-            congestionScore >=
-            35
-        ) {
-
-            congestionEl.textContent =
-                "HIGH";
-        }
-
-        else if (
-            congestionScore >=
-            18
-        ) {
-
-            congestionEl.textContent =
-                "MEDIUM";
-        }
-
-        else {
-
-            congestionEl.textContent =
-                "LOW";
-        }
-    }
-
-
-    /*
-    RL METRICS
-    */
-
-    if (
-        queueScoreEl
-    ) {
-
-        queueScoreEl.textContent =
-            queueScore.toFixed(1);
-    }
-
-
-    if (
-        waitingScoreEl
-    ) {
-
-        waitingScoreEl.textContent =
-            waitingScore.toFixed(1);
-    }
-
-
-    if (
-        congestionScoreEl
-    ) {
-
-        congestionScoreEl.textContent =
-            congestionScore.toFixed(1);
-    }
-
-
-    if (
-        selectedDirectionEl
-    ) {
-
-        selectedDirectionEl.textContent =
-            emergencyActive
-                ? "ALL STOP"
-                : selectedDirection;
-    }
-
-
-    if (
-        signalTimerEl
-    ) {
-
-        signalTimerEl.textContent =
-            emergencyActive
-                ? "STOPPED"
-                : Math.max(
-                    0,
-                    Math.ceil(
-                        signalTimer
-                    )
-                ) +
-                " seconds";
-    }
-
-
-    if (
-        phaseStatusEl
-    ) {
-
-        phaseStatusEl.textContent =
-            emergencyActive
-                ? "EMERGENCY STOP"
-                : signalPhase;
-    }
-
-
-    /*
-    BOTTOM STATUS
-    */
-
-    if (
-        nsStatusEl
-    ) {
-
-        if (
-            emergencyActive
-        ) {
-
-            nsStatusEl.textContent =
-                "RED";
-
-            nsStatusEl.className =
-                "signal-status red";
-
-        }
-
-        else if (
-            selectedDirection ===
-            "NS"
-        ) {
-
-            nsStatusEl.textContent =
-                signalPhase;
-
-            nsStatusEl.className =
-                "signal-status " +
-                signalPhase.toLowerCase();
-
-        }
-
-        else {
-
-            nsStatusEl.textContent =
-                "RED";
-
-            nsStatusEl.className =
-                "signal-status red";
-        }
-    }
-
-
-    if (
-        ewStatusEl
-    ) {
-
-        if (
-            emergencyActive
-        ) {
-
-            ewStatusEl.textContent =
-                "RED";
-
-            ewStatusEl.className =
-                "signal-status red";
-
-        }
-
-        else if (
-            selectedDirection ===
-            "EW"
-        ) {
-
-            ewStatusEl.textContent =
-                signalPhase;
-
-            ewStatusEl.className =
-                "signal-status " +
-                signalPhase.toLowerCase();
-
-        }
-
-        else {
-
-            ewStatusEl.textContent =
-                "RED";
-
-            ewStatusEl.className =
-                "signal-status red";
-        }
-    }
-
-
-    if (
-        queueNSEl
-    ) {
-
-        queueNSEl.textContent =
-            nsWaiting.length;
-    }
-
-
-    if (
-        queueEWEl
-    ) {
-
-        queueEWEl.textContent =
-            ewWaiting.length;
-    }
-
-
-    if (
-        congNSEl
-    ) {
-
-        congNSEl.textContent =
-            nsCars.length >= 6
-                ? "HIGH"
-                : nsCars.length >= 3
-                    ? "MEDIUM"
-                    : "LOW";
-    }
-
-
-    if (
-        congEWEl
-    ) {
-
-        congEWEl.textContent =
-            ewCars.length >= 6
-                ? "HIGH"
-                : ewCars.length >= 3
-                    ? "MEDIUM"
-                    : "LOW";
-    }
-}
-
-
-/* =====================================================
-   HARD SAFETY CHECK
-=====================================================
-
-This is an additional collision-prevention layer.
-
-Even if something unexpected happens in the
-movement calculation, cars on the SAME lane
-are forced apart.
-
-===================================================== */
-
-function enforceSafetyGaps() {
+/* =========================================================
+   COLLISION / SAFETY PROTECTION
+========================================================= */
+
+function enforceSafety() {
 
     const directions = [
         "N",
@@ -2422,8 +1061,8 @@ function enforceSafetyGaps() {
                         a,
                         b
                     ) =>
-                        getProgress(b) -
-                        getProgress(a)
+                        progress(b) -
+                        progress(a)
                 );
 
 
@@ -2442,24 +1081,21 @@ function enforceSafetyGaps() {
 
 
             if (
-                isPositiveDirection(
-                    direction
-                )
+                direction === "N"
             ) {
 
-                const minimum =
-                    front.y +
-                    CONFIG.CAR_HEIGHT +
-                    CONFIG.SAFETY_GAP;
+                const allowed =
+                    front.y -
+                    CONFIG.safetyGap;
 
 
                 if (
-                    back.y <
-                    minimum
+                    back.y >
+                    allowed
                 ) {
 
                     back.y =
-                        minimum;
+                        allowed;
                 }
             }
 
@@ -2468,19 +1104,18 @@ function enforceSafetyGaps() {
                 direction === "S"
             ) {
 
-                const maximum =
-                    front.y -
-                    CONFIG.SAFETY_GAP -
-                    CONFIG.CAR_HEIGHT;
+                const allowed =
+                    front.y +
+                    CONFIG.safetyGap;
 
 
                 if (
-                    back.y >
-                    maximum
+                    back.y <
+                    allowed
                 ) {
 
                     back.y =
-                        maximum;
+                        allowed;
                 }
             }
 
@@ -2489,149 +1124,939 @@ function enforceSafetyGaps() {
                 direction === "W"
             ) {
 
-                const minimum =
-                    front.x +
-                    CONFIG.CAR_WIDTH +
-                    CONFIG.SAFETY_GAP;
+                const allowed =
+                    front.x -
+                    CONFIG.safetyGap;
 
 
                 if (
-                    back.x <
-                    minimum
+                    back.x >
+                    allowed
                 ) {
 
                     back.x =
-                        minimum;
+                        allowed;
                 }
             }
 
 
             else {
 
-                const maximum =
-                    front.x -
-                    CONFIG.SAFETY_GAP -
-                    CONFIG.CAR_WIDTH;
+                const allowed =
+                    front.x +
+                    CONFIG.safetyGap;
 
 
                 if (
-                    back.x >
-                    maximum
+                    back.x <
+                    allowed
                 ) {
 
                     back.x =
-                        maximum;
+                        allowed;
                 }
             }
 
 
-            renderCar(
-                back
-            );
+            drawCar(back);
         }
     }
 }
 
 
-/* =====================================================
-   EMERGENCY BUTTON
-===================================================== */
+/* =========================================================
+   SIGNAL CONTROL
+========================================================= */
 
-if (
-    emergencyButton
+const signals =
+    document.querySelectorAll(
+        ".signal"
+    );
+
+
+function setSignal(
+    signal,
+    colour
 ) {
 
-    emergencyButton.addEventListener(
+    if (!signal) {
+        return;
+    }
+
+
+    const red =
+        signal.querySelector(
+            ".red"
+        );
+
+    const yellow =
+        signal.querySelector(
+            ".yellow"
+        );
+
+    const green =
+        signal.querySelector(
+            ".green"
+        );
+
+
+    /*
+    Remove previous state.
+    */
+
+    if (red)
+        red.classList.remove("on");
+
+    if (yellow)
+        yellow.classList.remove("on");
+
+    if (green)
+        green.classList.remove("on");
+
+
+    /*
+    Turn selected colour ON.
+    */
+
+    if (
+        colour === "RED" &&
+        red
+    ) {
+
+        red.classList.add("on");
+    }
+
+
+    if (
+        colour === "YELLOW" &&
+        yellow
+    ) {
+
+        yellow.classList.add("on");
+    }
+
+
+    if (
+        colour === "GREEN" &&
+        green
+    ) {
+
+        green.classList.add("on");
+    }
+}
+
+
+/* =========================================================
+   UPDATE ALL FOUR SIGNALS
+========================================================= */
+
+function updateSignals() {
+
+    signals.forEach(
+        signal => {
+
+            const direction =
+                signal.dataset.direction;
+
+
+            /*
+            Emergency:
+            ALL RED
+            */
+
+            if (
+                emergencyActive
+            ) {
+
+                setSignal(
+                    signal,
+                    "RED"
+                );
+
+                return;
+            }
+
+
+            /*
+            NS direction
+            */
+
+            if (
+                direction ===
+                "NS"
+            ) {
+
+                if (
+                    selectedAxis ===
+                    "NS"
+                ) {
+
+                    setSignal(
+                        signal,
+                        phase
+                    );
+
+                } else {
+
+                    setSignal(
+                        signal,
+                        "RED"
+                    );
+                }
+
+                return;
+            }
+
+
+            /*
+            EW direction
+            */
+
+            if (
+                selectedAxis ===
+                "EW"
+            ) {
+
+                setSignal(
+                    signal,
+                    phase
+                );
+
+            } else {
+
+                setSignal(
+                    signal,
+                    "RED"
+                );
+            }
+        }
+    );
+}
+
+
+/* =========================================================
+   SIGNAL TIMER
+========================================================= */
+
+function updateSignal(dt) {
+
+    if (
+        emergencyActive
+    ) {
+        return;
+    }
+
+
+    timer -= dt;
+
+
+    if (
+        timer > 0
+    ) {
+        return;
+    }
+
+
+    /*
+    GREEN -> YELLOW
+    */
+
+    if (
+        phase ===
+        "GREEN"
+    ) {
+
+        phase =
+            "YELLOW";
+
+        timer =
+            CONFIG.yellowTime;
+
+        updateSignals();
+
+        return;
+    }
+
+
+    /*
+    YELLOW -> OTHER DIRECTION
+    */
+
+    selectedAxis =
+        selectedAxis === "NS"
+            ? "EW"
+            : "NS";
+
+
+    phase =
+        "GREEN";
+
+    timer =
+        CONFIG.greenTime;
+
+
+    updateSignals();
+}
+
+
+/* =========================================================
+   SPAWN TRAFFIC
+========================================================= */
+
+function safeToSpawn(direction) {
+
+    for (
+        const car of cars
+    ) {
+
+        if (
+            car.direction !==
+            direction
+        ) {
+            continue;
+        }
+
+
+        if (
+            direction === "N" &&
+            car.y < 100
+        ) {
+            return false;
+        }
+
+
+        if (
+            direction === "S" &&
+            car.y >
+                geometry().height -
+                100
+        ) {
+            return false;
+        }
+
+
+        if (
+            direction === "W" &&
+            car.x < 100
+        ) {
+            return false;
+        }
+
+
+        if (
+            direction === "E" &&
+            car.x >
+                geometry().width -
+                100
+        ) {
+            return false;
+        }
+    }
+
+
+    return true;
+}
+
+
+function spawnTraffic() {
+
+    if (
+        emergencyActive
+    ) {
+        return;
+    }
+
+
+    if (
+        cars.length >=
+        CONFIG.maxCars
+    ) {
+        return;
+    }
+
+
+    const directions = [
+        "N",
+        "S",
+        "W",
+        "E"
+    ];
+
+
+    const available =
+        directions.filter(
+            direction =>
+                safeToSpawn(
+                    direction
+                )
+        );
+
+
+    if (
+        available.length === 0
+    ) {
+        return;
+    }
+
+
+    /*
+    Random traffic.
+    */
+
+    const direction =
+        available[
+            Math.floor(
+                Math.random() *
+                available.length
+            )
+        ];
+
+
+    createCar(
+        direction
+    );
+}
+
+
+/* =========================================================
+   EMERGENCY
+========================================================= */
+
+function triggerEmergency() {
+
+    if (
+        emergencyActive
+    ) {
+        return;
+    }
+
+
+    emergencyActive =
+        true;
+
+
+    /*
+    ALL NORMAL TRAFFIC STOPS.
+    */
+
+    cars.forEach(
+        car => {
+            car.wait += 0.1;
+        }
+    );
+
+
+    /*
+    Show ambulance.
+    */
+
+    if (
+        emergencyCar
+    ) {
+
+        const g =
+            geometry();
+
+
+        emergencyCar.hidden =
+            false;
+
+
+        emergencyCar.style.left =
+            `${g.centerX + 30}px`;
+
+
+        emergencyCar.style.top =
+            `${g.height - 20}px`;
+
+
+        emergencyCar.style.transform =
+            "translate(-50%, -50%) rotate(-90deg)";
+    }
+
+
+    /*
+    Status.
+    */
+
+    if (
+        emergencyStatus
+    ) {
+
+        emergencyStatus.innerHTML =
+            "Emergency Vehicle: <strong>ACTIVE — ALL TRAFFIC STOPPED</strong>";
+    }
+
+
+    updateSignals();
+
+
+    /*
+    Emergency duration.
+    */
+
+    setTimeout(
+        endEmergency,
+        7000
+    );
+}
+
+
+/* =========================================================
+   END EMERGENCY
+========================================================= */
+
+function endEmergency() {
+
+    emergencyActive =
+        false;
+
+
+    if (
+        emergencyCar
+    ) {
+
+        emergencyCar.hidden =
+            true;
+    }
+
+
+    if (
+        emergencyStatus
+    ) {
+
+        emergencyStatus.innerHTML =
+            "Emergency Vehicle: <strong>NONE</strong>";
+    }
+
+
+    phase =
+        "GREEN";
+
+    timer =
+        CONFIG.greenTime;
+
+
+    updateSignals();
+}
+
+
+/* =========================================================
+   UPDATE EMERGENCY VEHICLE
+========================================================= */
+
+function updateEmergency(dt) {
+
+    if (
+        !emergencyActive ||
+        !emergencyCar ||
+        emergencyCar.hidden
+    ) {
+        return;
+    }
+
+
+    const currentTop =
+        parseFloat(
+            emergencyCar.style.top
+        );
+
+
+    if (
+        Number.isNaN(
+            currentTop
+        )
+    ) {
+        return;
+    }
+
+
+    const newTop =
+        currentTop -
+        120 * dt;
+
+
+    emergencyCar.style.top =
+        `${newTop}px`;
+
+
+    if (
+        newTop < -60
+    ) {
+
+        emergencyCar.hidden =
+            true;
+    }
+}
+
+
+/* =========================================================
+   METRICS
+========================================================= */
+
+function updateMetrics() {
+
+    const ns =
+        cars.filter(
+            car =>
+                car.direction === "N" ||
+                car.direction === "S"
+        );
+
+
+    const ew =
+        cars.filter(
+            car =>
+                car.direction === "E" ||
+                car.direction === "W"
+        );
+
+
+    const nsWaiting =
+        ns.filter(
+            car =>
+                car.wait > 0.5
+        );
+
+
+    const ewWaiting =
+        ew.filter(
+            car =>
+                car.wait > 0.5
+        );
+
+
+    const waitNS =
+        ns.length
+            ? ns.reduce(
+                (
+                    total,
+                    car
+                ) =>
+                    total +
+                    car.wait,
+                0
+            ) / ns.length
+            : 0;
+
+
+    const waitEW =
+        ew.length
+            ? ew.reduce(
+                (
+                    total,
+                    car
+                ) =>
+                    total +
+                    car.wait,
+                0
+            ) / ew.length
+            : 0;
+
+
+    const queue =
+        cars.length;
+
+
+    const waiting =
+        nsWaiting.length +
+        ewWaiting.length;
+
+
+    const congestion =
+        Math.min(
+            100,
+            cars.length * 4 +
+            waiting * 2
+        );
+
+
+    if (
+        vehiclesNS
+    ) {
+
+        vehiclesNS.textContent =
+            ns.length;
+    }
+
+
+    if (
+        vehiclesEW
+    ) {
+
+        vehiclesEW.textContent =
+            ew.length;
+    }
+
+
+    if (
+        avgWaitNS
+    ) {
+
+        avgWaitNS.textContent =
+            waitNS.toFixed(1) +
+            "s";
+    }
+
+
+    if (
+        avgWaitEW
+    ) {
+
+        avgWaitEW.textContent =
+            waitEW.toFixed(1) +
+            "s";
+    }
+
+
+    if (
+        throughputEl
+    ) {
+
+        throughputEl.textContent =
+            throughput;
+    }
+
+
+    if (
+        congestionEl
+    ) {
+
+        if (
+            congestion >= 60
+        ) {
+
+            congestionEl.textContent =
+                "HIGH";
+
+        } else if (
+            congestion >= 25
+        ) {
+
+            congestionEl.textContent =
+                "MEDIUM";
+
+        } else {
+
+            congestionEl.textContent =
+                "LOW";
+        }
+    }
+
+
+    if (
+        queueScore
+    ) {
+
+        queueScore.textContent =
+            (
+                queue * 3
+            ).toFixed(1);
+    }
+
+
+    if (
+        waitingScore
+    ) {
+
+        waitingScore.textContent =
+            (
+                waiting * 0.5
+            ).toFixed(1);
+    }
+
+
+    if (
+        congestionScore
+    ) {
+
+        congestionScore.textContent =
+            (
+                congestion * 0.2
+            ).toFixed(1);
+    }
+
+
+    if (
+        selectedDirection
+    ) {
+
+        selectedDirection.textContent =
+            emergencyActive
+                ? "EMERGENCY"
+                : selectedAxis;
+    }
+
+
+    if (
+        signalTimer
+    ) {
+
+        signalTimer.textContent =
+            emergencyActive
+                ? "STOP"
+                : Math.max(
+                    0,
+                    Math.ceil(timer)
+                );
+    }
+
+
+    if (
+        currentPhase
+    ) {
+
+        currentPhase.textContent =
+            emergencyActive
+                ? "EMERGENCY STOP"
+                : phase;
+    }
+
+
+    /*
+    Bars.
+    */
+
+    if (
+        nsBar
+    ) {
+
+        nsBar.style.width =
+            Math.min(
+                100,
+                ns.length * 10
+            ) + "%";
+    }
+
+
+    if (
+        ewBar
+    ) {
+
+        ewBar.style.width =
+            Math.min(
+                100,
+                ew.length * 10
+            ) + "%";
+    }
+
+
+    if (
+        throughputBar
+    ) {
+
+        throughputBar.style.width =
+            Math.min(
+                100,
+                throughput
+            ) + "%";
+    }
+}
+
+
+/* =========================================================
+   INITIAL TRAFFIC
+========================================================= */
+
+function createInitialTraffic() {
+
+    /*
+    One car on each incoming lane,
+    with enough separation.
+    */
+
+    createCar("N", 0);
+    createCar("N", 130);
+
+    createCar("S", 0);
+    createCar("S", 130);
+
+    createCar("W", 0);
+    createCar("W", 130);
+
+    createCar("E", 0);
+    createCar("E", 130);
+}
+
+
+/* =========================================================
+   BUTTON
+========================================================= */
+
+if (
+    emergencyBtn
+) {
+
+    emergencyBtn.addEventListener(
         "click",
         triggerEmergency
     );
 }
 
 
-/* =====================================================
-   INITIAL TRAFFIC
-===================================================== */
+/* =========================================================
+   START
+========================================================= */
 
 createInitialTraffic();
 
-
-/* =====================================================
-   INITIAL SIGNAL
-===================================================== */
-
-updateSignalLights();
+updateSignals();
 
 updateMetrics();
 
 
-/* =====================================================
-   MAIN ANIMATION LOOP
-===================================================== */
+/* =========================================================
+   MAIN LOOP
+========================================================= */
 
-function animationLoop(
-    currentTime
-) {
+function loop(now) {
 
-    const delta =
+    const dt =
         Math.min(
             0.05,
             (
-                currentTime -
+                now -
                 lastTime
             ) / 1000
         );
 
 
     lastTime =
-        currentTime;
+        now;
 
 
     /*
-    ============================================
-    SIGNAL
-    ============================================
+    Signal controller.
     */
 
-    updateSignal(
-        delta
-    );
+    updateSignal(dt);
 
 
     /*
-    ============================================
-    SPAWN
-    ============================================
+    Spawn new traffic.
     */
 
-    spawnTimer +=
-        delta;
+    spawnClock += dt;
 
 
     if (
-        spawnTimer >=
-        CONFIG.SPAWN_INTERVAL /
-        1000
+        spawnClock >=
+        CONFIG.spawnInterval
     ) {
 
-        spawnTimer =
-            0;
+        spawnClock = 0;
 
         spawnTraffic();
     }
 
 
     /*
-    ============================================
-    UPDATE NORMAL CARS
-    ============================================
+    Update cars.
     */
 
     /*
-    Front cars are updated first.
-
-    This is very important because the
-    vehicle behind needs to see the
-    vehicle in front's latest position.
+    Sort each lane so the
+    front car is updated first.
     */
 
     const directions = [
@@ -2658,8 +2083,8 @@ function animationLoop(
                         a,
                         b
                     ) =>
-                        getProgress(b) -
-                        getProgress(a)
+                        progress(b) -
+                        progress(a)
                 );
 
 
@@ -2673,7 +2098,7 @@ function animationLoop(
 
                 updateCar(
                     car,
-                    delta
+                    dt
                 );
             }
         }
@@ -2681,52 +2106,34 @@ function animationLoop(
 
 
     /*
-    ============================================
-    HARD COLLISION PROTECTION
-    ============================================
+    Hard safety layer.
     */
 
-    enforceSafetyGaps();
+    enforceSafety();
 
 
     /*
-    ============================================
-    EMERGENCY
-    ============================================
+    Emergency.
     */
 
-    updateEmergency(
-        delta
-    );
+    updateEmergency(dt);
 
 
     /*
-    ============================================
-    UI
-    ============================================
+    UI.
     */
 
-    updateSignalLights();
+    updateSignals();
 
     updateMetrics();
 
 
-    /*
-    ============================================
-    NEXT FRAME
-    ============================================
-    */
-
     requestAnimationFrame(
-        animationLoop
+        loop
     );
 }
 
 
-/* =====================================================
-   START
-===================================================== */
-
 requestAnimationFrame(
-    animationLoop
+    loop
 );
