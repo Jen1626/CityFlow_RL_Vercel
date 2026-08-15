@@ -1,6 +1,7 @@
-/* =========================================
-   CITYFLOW - COMPLETE STYLE SHEET
-   ========================================= */
+/* =========================================================
+   CITYFLOW
+   COMPLETE STYLE.CSS
+   ========================================================= */
 
 * {
     box-sizing: border-box;
@@ -9,6 +10,8 @@
 :root {
     --bg: #061316;
     --panel: #081c20;
+    --panel-light: #0c2427;
+
     --road: #303b3d;
     --road-dark: #273133;
 
@@ -27,13 +30,20 @@
 }
 
 
-/* =========================================
+/* =========================================================
    PAGE
-   ========================================= */
+   ========================================================= */
 
+html,
 body {
     margin: 0;
+    padding: 0;
+
+    width: 100%;
+    min-height: 100%;
+
     background: var(--bg);
+
     color: var(--text);
 
     font-family:
@@ -43,30 +53,45 @@ body {
         sans-serif;
 }
 
+body {
+    overflow-x: hidden;
+}
 
-/* =========================================
+
+/* =========================================================
    HEADER
-   ========================================= */
+   ========================================================= */
 
 .topbar {
-    height: 115px;
+    width: 100%;
 
-    padding: 25px 5%;
+    min-height: 115px;
+
+    padding: 24px 5%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
 
     border-bottom: 1px solid #123236;
 
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: #061316;
 }
 
-h1 {
+.topbar h1 {
     margin: 0;
+
     font-size: 32px;
+
+    line-height: 1.1;
 }
 
 .topbar p {
-    margin: 4px 0;
+    margin: 6px 0 0;
 
     color: var(--cyan);
 
@@ -74,22 +99,24 @@ h1 {
 }
 
 .header-badge {
-    border: 1px solid #1b5355;
-
     padding: 10px 16px;
+
+    border: 1px solid #1b5355;
 
     border-radius: 20px;
 
     color: #9fe8e2;
+
+    background: #081c20;
 }
 
 
-/* =========================================
+/* =========================================================
    MAIN CONTAINER
-   ========================================= */
+   ========================================================= */
 
 .container {
-    max-width: 1400px;
+    width: min(1400px, 100%);
 
     margin: 28px auto;
 
@@ -97,31 +124,31 @@ h1 {
 }
 
 
-/* =========================================
-   STAT CARDS
-   ========================================= */
+/* =========================================================
+   STATISTICS
+   ========================================================= */
 
 .stats {
     display: grid;
 
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
 
     gap: 16px;
 
     margin-bottom: 22px;
 }
 
-.stat,
-.panel {
+.stat {
+    min-width: 0;
+
+    padding: 18px 20px;
+
     background: var(--panel);
 
     border: 1px solid #123b3f;
 
     border-radius: 20px;
-}
-
-.stat {
-    padding: 18px 20px;
 }
 
 .stat span {
@@ -130,50 +157,67 @@ h1 {
     color: var(--muted);
 
     font-size: 14px;
+
+    white-space: nowrap;
 }
 
 .stat strong {
     display: block;
 
+    margin-top: 7px;
+
     font-size: 29px;
 
-    margin-top: 7px;
+    line-height: 1.1;
 }
 
 
-/* =========================================
+/* =========================================================
    MAIN GRID
-   ========================================= */
+   ========================================================= */
 
 .grid {
     display: grid;
 
-    grid-template-columns: 1.6fr 1fr;
+    grid-template-columns:
+        minmax(0, 1.6fr)
+        minmax(340px, 1fr);
 
     gap: 20px;
 }
 
 .panel {
+    min-width: 0;
+
+    background: var(--panel);
+
+    border: 1px solid #123b3f;
+
+    border-radius: 20px;
+
     padding: 24px;
 }
 
-.intersection-panel {
-    min-width: 0;
-}
+
+/* =========================================================
+   PANEL HEADER
+   ========================================================= */
 
 .panel-head {
     display: flex;
+
+    align-items: center;
 
     justify-content: space-between;
 
     gap: 20px;
 
-    align-items: center;
-
     margin-bottom: 18px;
 }
 
-small {
+.panel-head small {
+    display: block;
+
     color: var(--cyan);
 
     font-weight: 700;
@@ -181,41 +225,63 @@ small {
     letter-spacing: 2px;
 }
 
-h2 {
+.panel-head h2 {
     margin: 7px 0 0;
 
     font-size: 23px;
+
+    line-height: 1.2;
+}
+
+h1,
+h2,
+h3 {
+    color: var(--text);
 }
 
 
-/* =========================================
+/* =========================================================
    BUTTON
-   ========================================= */
+   ========================================================= */
 
 button {
-    background: #0d716a;
-
-    color: white;
-
     border: 1px solid #2ca89e;
 
     border-radius: 11px;
 
     padding: 13px 18px;
 
+    background: #0d716a;
+
+    color: white;
+
+    font-size: 15px;
+
     font-weight: 700;
 
     cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 button:hover {
-    filter: brightness(1.15);
+    background: #12867d;
+
+    box-shadow:
+        0 0 15px rgba(57, 228, 214, 0.2);
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 
-/* =========================================
+/* =========================================================
    INTERSECTION
-   ========================================= */
+   ========================================================= */
 
 .intersection {
     position: relative;
@@ -232,27 +298,29 @@ button:hover {
 }
 
 
-/* =========================================
-   ROADS
-   ========================================= */
+/* =========================================================
+   ROAD
+   ========================================================= */
 
 .road {
     position: absolute;
 
-    background: var(--road);
-
     z-index: 1;
+
+    background: var(--road);
 }
 
 
 /* Vertical road */
 
 .road-v {
+    position: absolute;
+
     left: 35%;
 
-    width: 30%;
-
     top: 0;
+
+    width: 30%;
 
     height: 100%;
 }
@@ -261,31 +329,61 @@ button:hover {
 /* Horizontal road */
 
 .road-h {
-    top: 35%;
-
-    height: 30%;
+    position: absolute;
 
     left: 0;
 
+    top: 35%;
+
     width: 100%;
+
+    height: 30%;
 }
 
 
-/* =========================================
+/* =========================================================
+   ROAD EDGE / BACKGROUND
+   ========================================================= */
+
+.intersection::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 0;
+
+    pointer-events: none;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.05),
+            transparent 20%,
+            transparent 80%,
+            rgba(0, 0, 0, 0.05)
+        );
+}
+
+
+/* =========================================================
    LANE DIVIDERS
-   =========================================
+   ========================================================= */
 
-   IMPORTANT:
-   The lane-line element itself covers
-   the entire intersection.
+/*
+   The divider is split into two sections.
 
-   Its ::before and ::after sections
-   create the dashed markings only on
-   the four outer road sections.
+   Vertical:
+   - North side
+   - South side
 
-   Therefore the center intersection
-   remains clear.
-   ========================================= */
+   Horizontal:
+   - West side
+   - East side
+
+   The middle intersection remains clear.
+*/
 
 .lane-line {
     position: absolute;
@@ -294,13 +392,13 @@ button:hover {
 
     pointer-events: none;
 
-    opacity: 0.55;
+    opacity: 0.62;
 }
 
 
-/* =========================================
-   VERTICAL ROAD DIVIDER
-   ========================================= */
+/* =========================================================
+   VERTICAL LANE DIVIDER
+   ========================================================= */
 
 .lane-line.vertical {
     position: absolute;
@@ -313,11 +411,15 @@ button:hover {
 
     height: 100%;
 
+    transform: translateX(-50%);
+
     background: transparent;
+
+    pointer-events: none;
 }
 
 
-/* North side */
+/* North divider */
 
 .lane-line.vertical::before {
     content: "";
@@ -345,7 +447,7 @@ button:hover {
 }
 
 
-/* South side */
+/* South divider */
 
 .lane-line.vertical::after {
     content: "";
@@ -373,9 +475,9 @@ button:hover {
 }
 
 
-/* =========================================
-   HORIZONTAL ROAD DIVIDER
-   ========================================= */
+/* =========================================================
+   HORIZONTAL LANE DIVIDER
+   ========================================================= */
 
 .lane-line.horizontal {
     position: absolute;
@@ -388,11 +490,15 @@ button:hover {
 
     height: 4px;
 
+    transform: translateY(-50%);
+
     background: transparent;
+
+    pointer-events: none;
 }
 
 
-/* West side */
+/* West divider */
 
 .lane-line.horizontal::before {
     content: "";
@@ -420,7 +526,7 @@ button:hover {
 }
 
 
-/* East side */
+/* East divider */
 
 .lane-line.horizontal::after {
     content: "";
@@ -448,125 +554,140 @@ button:hover {
 }
 
 
-/* =========================================
+/* =========================================================
    STOP LINES
-   ========================================= */
+   ========================================================= */
 
 .stop-line {
     position: absolute;
 
-    background: white;
+    z-index: 4;
 
-    z-index: 3;
+    background: #ffffff;
 
     pointer-events: none;
+
+    box-shadow:
+        0 0 2px rgba(255, 255, 255, 0.3);
 }
 
 
-/* North stop line */
+/* North */
 
 .north-stop {
     left: 35%;
 
+    top: 34%;
+
     width: 30%;
 
     height: 6px;
-
-    top: 34%;
 }
 
 
-/* South stop line */
+/* South */
 
 .south-stop {
     left: 35%;
 
+    top: 65%;
+
     width: 30%;
 
     height: 6px;
-
-    top: 65%;
 }
 
 
-/* West stop line */
+/* West */
 
 .west-stop {
-    top: 35%;
+    left: 34%;
 
-    height: 30%;
+    top: 35%;
 
     width: 6px;
 
-    left: 34%;
+    height: 30%;
 }
 
 
-/* East stop line */
+/* East */
 
 .east-stop {
-    top: 35%;
+    left: 65%;
 
-    height: 30%;
+    top: 35%;
 
     width: 6px;
 
-    left: 65%;
+    height: 30%;
 }
 
 
-/* =========================================
+/* =========================================================
    AI NODE
-   ========================================= */
+   ========================================================= */
 
 .ai-node {
     position: absolute;
-
-    z-index: 12;
 
     left: 50%;
 
     top: 50%;
 
-    transform: translate(-50%, -50%);
+    z-index: 15;
 
     width: 90px;
 
     height: 90px;
 
-    border-radius: 50%;
+    transform: translate(-50%, -50%);
 
     display: grid;
 
     place-items: center;
 
-    background: #041317;
-
     border: 2px solid var(--cyan);
 
-    box-shadow:
-        0 0 20px #27d7d066;
+    border-radius: 50%;
+
+    background: #041317;
+
+    color: var(--cyan);
+
+    font-size: 18px;
 
     font-weight: 800;
 
-    color: var(--cyan);
+    box-shadow:
+        0 0 20px rgba(39, 215, 213, 0.4);
 
     pointer-events: none;
 }
 
 
-/* =========================================
+/* =========================================================
    TRAFFIC SIGNAL
-   ========================================= */
+   ========================================================= */
 
 .signal {
     position: absolute;
 
     z-index: 20;
 
-    width: 74px;
+    width: 78px;
 
-    height: 34px;
+    height: 36px;
+
+    padding: 4px 6px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
 
     background: #162327;
 
@@ -574,106 +695,113 @@ button:hover {
 
     border-radius: 14px;
 
-    display: flex;
-
-    gap: 5px;
-
-    align-items: center;
-
-    justify-content: center;
-
-    padding: 4px;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 
-/* Individual light */
+/* Traffic lights */
 
 .signal i {
+    display: block;
+
     width: 14px;
 
     height: 14px;
+
+    flex-shrink: 0;
 
     border-radius: 50%;
 
     background: #344244;
 
-    display: block;
+    box-shadow: none;
 
-    flex-shrink: 0;
+    transition:
+        background 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
 
-/* RED */
+/* Red */
 
 .signal i.red.on {
     background: var(--red);
 
     box-shadow:
-        0 0 9px var(--red);
+        0 0 10px var(--red);
 }
 
 
-/* YELLOW */
+/* Yellow */
 
 .signal i.yellow.on {
     background: var(--yellow);
 
     box-shadow:
-        0 0 9px var(--yellow);
+        0 0 10px var(--yellow);
 }
 
 
-/* GREEN */
+/* Green */
 
 .signal i.green.on {
     background: var(--green);
 
     box-shadow:
-        0 0 9px var(--green);
+        0 0 10px var(--green);
 }
 
 
-/* =========================================
+/* =========================================================
    SIGNAL POSITIONS
-   ========================================= */
+   ========================================================= */
 
 .north-signal {
-    top: 26%;
+    top: 25%;
 
-    right: 18%;
+    right: 17%;
 }
 
 .south-signal {
-    bottom: 26%;
+    bottom: 25%;
 
-    left: 18%;
+    left: 17%;
 }
 
 .east-signal {
-    right: 18%;
+    right: 17%;
 
     top: 67%;
 }
 
 .west-signal {
-    left: 18%;
+    left: 17%;
 
-    top: 27%;
+    top: 25%;
 }
 
 
-/* =========================================
-   CARS
-   ========================================= */
+/* =========================================================
+   ACTUAL EMOJI CARS
+   ========================================================= */
 
 .traffic-car {
     position: absolute;
 
-    width: 38px;
+    width: 42px;
 
-    height: 24px;
+    height: 32px;
 
     z-index: 10;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 0;
 
     pointer-events: none;
 
@@ -681,88 +809,128 @@ button:hover {
 
     transition: none !important;
 
-    will-change: left, top, transform;
+    will-change: left, top;
 }
 
 
-/* Car body */
+/*
+   Actual car emoji
+*/
 
-.car-body {
-    width: 100%;
+.car-emoji {
+    display: block;
 
-    height: 100%;
+    width: 42px;
 
-    background: var(--blue);
+    height: 32px;
 
-    border-radius: 7px;
+    font-size: 30px;
 
-    box-shadow:
-        0 2px 5px rgba(0, 0, 0, 0.35);
+    line-height: 32px;
 
-    position: relative;
+    text-align: center;
 
-    box-sizing: border-box;
+    user-select: none;
+
+    font-family:
+        "Apple Color Emoji",
+        "Segoe UI Emoji",
+        "Noto Color Emoji",
+        sans-serif;
 }
 
 
-/* Car window */
+/* =========================================================
+   CAR DIRECTIONS
+   ========================================================= */
 
-.car-window {
-    position: absolute;
+/*
+   North-bound cars
+*/
 
-    width: 14px;
-
-    height: 9px;
-
-    left: 12px;
-
-    top: 4px;
-
-    background: var(--window);
-
-    border-radius: 3px;
-
-    pointer-events: none;
+.car-north {
+    transform: rotate(90deg);
 }
 
 
-/* =========================================
+/*
+   South-bound cars
+*/
+
+.car-south {
+    transform: rotate(-90deg);
+}
+
+
+/*
+   East-bound cars
+*/
+
+.car-east {
+    transform: rotate(180deg);
+}
+
+
+/*
+   West-bound cars
+*/
+
+.car-west {
+    transform: rotate(0deg);
+}
+
+
+/* =========================================================
    EMERGENCY VEHICLE
-   ========================================= */
+   ========================================================= */
 
 .emergency-car {
     position: absolute;
 
-    width: 40px;
+    width: 44px;
 
-    height: 30px;
+    height: 34px;
 
     z-index: 40;
 
-    font-size: 28px;
+    display: flex;
 
-    line-height: 30px;
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 0;
+
+    font-size: 32px;
+
+    line-height: 34px;
 
     text-align: center;
 
+    pointer-events: none;
+
     transition: none !important;
 
-    pointer-events: none;
+    font-family:
+        "Apple Color Emoji",
+        "Segoe UI Emoji",
+        "Noto Color Emoji",
+        sans-serif;
 }
 
 
-/* =========================================
+/* =========================================================
    EMERGENCY STATUS
-   ========================================= */
+   ========================================================= */
 
 .emergency-status {
     margin-top: 14px;
 
-    background: #0d191c;
+    padding: 13px;
 
     border-radius: 12px;
 
-    padding: 13px;
+    background: #0d191c;
 
     color: var(--muted);
 }
@@ -772,9 +940,9 @@ button:hover {
 }
 
 
-/* =========================================
+/* =========================================================
    METRICS PANEL
-   ========================================= */
+   ========================================================= */
 
 .metrics-panel {
     padding: 28px;
@@ -783,9 +951,13 @@ button:hover {
 .metric-row {
     display: flex;
 
+    align-items: center;
+
     justify-content: space-between;
 
-    padding: 24px 0;
+    min-height: 70px;
+
+    padding: 18px 0;
 
     border-bottom: 1px solid #17383b;
 
@@ -799,35 +971,41 @@ button:hover {
 }
 
 
-/* =========================================
+/* =========================================================
    FORMULA
-   ========================================= */
+   ========================================================= */
 
 .formula {
     margin: 22px 0;
 
     padding: 20px;
 
-    background: #0b2927;
-
     border-radius: 14px;
+
+    background: #0b2927;
 
     color: #8ee8e0;
 
     font-family: monospace;
+
+    font-size: 15px;
 }
 
 
-/* =========================================
+/* =========================================================
    DECISION
-   ========================================= */
+   ========================================================= */
 
 .decision {
     display: flex;
 
+    align-items: center;
+
     justify-content: space-between;
 
     padding: 12px 0;
+
+    color: #a6babb;
 }
 
 .decision strong {
@@ -835,14 +1013,15 @@ button:hover {
 }
 
 
-/* =========================================
+/* =========================================================
    BOTTOM GRID
-   ========================================= */
+   ========================================================= */
 
 .bottom-grid {
     display: grid;
 
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
 
     gap: 20px;
 
@@ -850,46 +1029,56 @@ button:hover {
 }
 
 
-/* =========================================
+/* =========================================================
    BARS
-   ========================================= */
+   ========================================================= */
 
 .bars > div {
     margin: 18px 0;
 }
 
 .bars span {
+    display: block;
+
     color: var(--muted);
+
+    margin-bottom: 6px;
 }
 
 .bar {
+    width: 100%;
+
     height: 10px;
-
-    background: #102a2d;
-
-    border-radius: 8px;
 
     overflow: hidden;
 
-    margin-top: 7px;
+    border-radius: 8px;
+
+    background: #102a2d;
 }
 
 .bar b {
     display: block;
 
+    width: 0%;
+
     height: 100%;
 
-    width: 0;
+    border-radius: 8px;
 
     background: var(--cyan);
 
-    transition: width 0.25s;
+    transition: width 0.25s ease;
 }
 
 
-/* =========================================
+/* =========================================================
    LISTS
-   ========================================= */
+   ========================================================= */
+
+ul {
+    padding-left: 20px;
+}
 
 li {
     margin: 12px 0;
@@ -898,23 +1087,46 @@ li {
 }
 
 
-/* =========================================
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+footer {
+    margin-top: 25px;
+
+    padding: 20px;
+
+    text-align: center;
+
+    color: var(--muted);
+}
+
+
+/* =========================================================
    RESPONSIVE
-   ========================================= */
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    .stats {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 
 @media (max-width: 900px) {
 
-    .stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .grid,
     .bottom-grid {
         grid-template-columns: 1fr;
     }
 
     .intersection {
-        height: 500px;
+        height: 520px;
     }
 
     .panel-head {
@@ -925,30 +1137,27 @@ li {
 }
 
 
-/* =========================================
-   SMALL SCREEN
-   ========================================= */
-
 @media (max-width: 600px) {
 
     .topbar {
-        height: auto;
-
         padding: 20px;
 
         flex-direction: column;
 
         align-items: flex-start;
-
-        gap: 12px;
     }
 
     .stats {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
     }
 
     .container {
         padding: 0 12px;
+    }
+
+    .panel {
+        padding: 16px;
     }
 
     .intersection {
@@ -956,12 +1165,32 @@ li {
     }
 
     .signal {
-        transform: scale(0.85);
+        transform: scale(0.8);
     }
 
     .ai-node {
         width: 75px;
 
         height: 75px;
+    }
+
+    .car-emoji {
+        font-size: 27px;
+    }
+}
+
+
+@media (max-width: 430px) {
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .intersection {
+        height: 400px;
+    }
+
+    .stat strong {
+        font-size: 25px;
     }
 }
