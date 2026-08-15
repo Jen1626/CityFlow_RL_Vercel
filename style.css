@@ -1,549 +1,597 @@
 /* =========================================================
-   CITYFLOW — COMPLETE STYLE.CSS
-   Traffic simulation dashboard
-   ========================================================= */
+   CITYFLOW - COMPLETE STYLE.CSS
+   FIXED VERSION
+========================================================= */
 
 * {
     box-sizing: border-box;
+}
+
+:root {
+    --bg: #061316;
+    --panel: #081c20;
+    --road: #303b3d;
+    --text: #e8f6f5;
+    --muted: #8ba7a8;
+
+    --cyan: #39e4d6;
+    --green: #42e695;
+    --yellow: #ffd34d;
+    --red: #ff5252;
+    --lane: #d6e0df;
 }
 
 html,
 body {
     margin: 0;
     padding: 0;
-    width: 100%;
     min-height: 100%;
+
+    background: var(--bg);
+    color: var(--text);
+
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
 }
 
 body {
-    font-family:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-    background: #031316;
-    color: #e9f7f7;
-
     overflow-x: hidden;
 }
 
-
-/* =========================================================
-   MAIN APP
-   ========================================================= */
-
-.container {
-    width: min(1400px, 94%);
-    margin: 0 auto;
-    padding: 32px 0 50px;
-}
-
-
 /* =========================================================
    HEADER
-   ========================================================= */
+========================================================= */
 
-header {
-    margin-bottom: 28px;
+.topbar {
+    width: 100%;
+    min-height: 115px;
+
+    padding: 24px 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #123236;
+    background: #061316;
 }
 
-header h1 {
+.topbar h1 {
     margin: 0;
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: -1px;
+    font-size: 32px;
 }
 
-header p {
+.topbar p {
     margin: 6px 0 0;
-    color: #36ddd8;
+
+    color: var(--cyan);
+
     font-size: 18px;
 }
 
+.header-badge {
+    padding: 10px 16px;
 
-/* =========================================================
-   TOP STAT CARDS
-   ========================================================= */
-
-.stats-grid,
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
-    margin-bottom: 20px;
-}
-
-.stat-card {
-    min-height: 102px;
-
-    padding: 20px;
-
-    border: 1px solid rgba(38, 216, 213, 0.25);
+    border: 1px solid #1b5355;
     border-radius: 20px;
 
-    background: #061a1d;
-
-    box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.01),
-        0 8px 30px rgba(0,0,0,0.12);
+    background: #081c20;
+    color: #9fe8e2;
 }
-
-.stat-card .label {
-    display: block;
-
-    margin-bottom: 8px;
-
-    color: #94aaaa;
-
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.stat-card .value {
-    display: block;
-
-    color: #e9f7f7;
-
-    font-size: 30px;
-    line-height: 1;
-
-    font-weight: 800;
-}
-
 
 /* =========================================================
-   MAIN TWO-COLUMN LAYOUT
-   ========================================================= */
+   MAIN CONTAINER
+========================================================= */
 
-.main-grid {
+.container {
+    width: min(1400px, 100%);
+    margin: 28px auto;
+
+    padding: 0 22px;
+}
+
+/* =========================================================
+   STATISTICS
+========================================================= */
+
+.stats {
     display: grid;
 
     grid-template-columns:
-        minmax(0, 1.55fr)
-        minmax(350px, 1fr);
+        repeat(6, minmax(0, 1fr));
 
-    gap: 20px;
+    gap: 16px;
 
-    align-items: stretch;
+    margin-bottom: 22px;
 }
 
+.stat {
+    padding: 18px 20px;
+
+    background: var(--panel);
+
+    border: 1px solid #123b3f;
+
+    border-radius: 20px;
+}
+
+.stat span {
+    display: block;
+
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.stat strong {
+    display: block;
+
+    margin-top: 7px;
+
+    font-size: 29px;
+}
 
 /* =========================================================
-   PANELS
-   ========================================================= */
+   MAIN GRID
+========================================================= */
+
+.grid {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.6fr)
+        minmax(340px, 1fr);
+
+    gap: 20px;
+}
 
 .panel {
-    background: #061a1d;
-
-    border: 1px solid rgba(38, 216, 213, 0.20);
-
-    border-radius: 22px;
+    min-width: 0;
 
     padding: 24px;
 
-    box-shadow:
-        0 10px 35px rgba(0,0,0,0.15);
+    background: var(--panel);
+
+    border: 1px solid #123b3f;
+
+    border-radius: 20px;
 }
 
-.panel-header {
+/* =========================================================
+   PANEL HEADER
+========================================================= */
+
+.panel-head {
     display: flex;
 
-    justify-content: space-between;
     align-items: center;
+
+    justify-content: space-between;
 
     gap: 20px;
 
     margin-bottom: 18px;
 }
 
-.panel-title {
-    margin: 0;
+.panel-head small {
+    display: block;
 
-    font-size: 25px;
-    font-weight: 800;
-}
+    color: var(--cyan);
 
-.panel-subtitle {
-    margin: 0 0 6px;
-
-    color: #32ddd7;
-
-    font-size: 13px;
     font-weight: 700;
 
     letter-spacing: 2px;
 }
 
+.panel-head h2 {
+    margin: 7px 0 0;
+
+    font-size: 23px;
+}
+
+h1,
+h2,
+h3 {
+    color: var(--text);
+}
 
 /* =========================================================
-   EMERGENCY BUTTON
-   ========================================================= */
+   BUTTON
+========================================================= */
 
-button,
-.emergency-button {
-    border: 1px solid rgba(73, 242, 234, 0.35);
+button {
+    padding: 13px 18px;
 
-    border-radius: 10px;
+    border: 1px solid #2ca89e;
 
-    padding: 14px 20px;
+    border-radius: 11px;
 
-    background: #0d6865;
+    background: #0d716a;
+
     color: white;
 
-    font-family: inherit;
-
     font-size: 15px;
+
     font-weight: 700;
 
     cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
 }
 
-button:hover,
-.emergency-button:hover {
-    background: #11817c;
-    transform: translateY(-1px);
+button:hover {
+    background: #12867d;
 }
 
-button:active,
-.emergency-button:active {
-    transform: translateY(0);
+button:active {
+    transform: scale(0.98);
 }
-
 
 /* =========================================================
    INTERSECTION
-   ========================================================= */
+========================================================= */
 
-.intersection-container,
 .intersection {
     position: relative;
 
     width: 100%;
 
-    height: 565px;
+    height: 610px;
 
     overflow: hidden;
 
-    border-radius: 18px;
+    border-radius: 16px;
 
-    background: #062420;
+    background: #05231f;
 }
 
-
 /* =========================================================
-   ROAD SYSTEM
-
-   Four separate road arms.
-   ========================================================= */
+   ROADS
+========================================================= */
 
 .road {
     position: absolute;
 
-    background: #303b3d;
+    z-index: 1;
+
+    background: var(--road);
 }
 
-
-/* vertical road */
-
-.road.vertical {
+.road-v {
+    left: 35%;
     top: 0;
-    bottom: 0;
 
+    width: 30%;
+    height: 100%;
+}
+
+.road-h {
+    left: 0;
+    top: 35%;
+
+    width: 100%;
+    height: 30%;
+}
+
+/* =========================================================
+   LANE DIVIDERS
+========================================================= */
+
+.lane-line {
+    position: absolute;
+
+    z-index: 2;
+
+    pointer-events: none;
+
+    opacity: 0.65;
+}
+
+/* Vertical divider */
+
+.lane-line.vertical {
     left: 50%;
+    top: 0;
 
-    width: 185px;
+    width: 4px;
+    height: 100%;
 
     transform: translateX(-50%);
 }
 
-
-/* horizontal road */
-
-.road.horizontal {
-    left: 0;
-    right: 0;
-
-    top: 50%;
-
-    height: 205px;
-
-    transform: translateY(-50%);
-}
-
-
-/* =========================================================
-   ROAD CENTER LINES
-   ========================================================= */
-
-.road.vertical::before {
+.lane-line.vertical::before {
     content: "";
 
     position: absolute;
 
-    left: 50%;
+    left: 0;
     top: 0;
-    bottom: 0;
 
     width: 4px;
-
-    transform: translateX(-50%);
+    height: 35%;
 
     background:
         repeating-linear-gradient(
             to bottom,
-            #9da9aa 0,
-            #9da9aa 9px,
+            var(--lane) 0px,
+            var(--lane) 9px,
             transparent 9px,
             transparent 18px
         );
-
-    opacity: 0.9;
 }
 
-.road.horizontal::before {
+.lane-line.vertical::after {
     content: "";
 
     position: absolute;
 
-    top: 50%;
     left: 0;
-    right: 0;
+    top: 65%;
 
+    width: 4px;
+    height: 35%;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            var(--lane) 0px,
+            var(--lane) 9px,
+            transparent 9px,
+            transparent 18px
+        );
+}
+
+/* Horizontal divider */
+
+.lane-line.horizontal {
+    left: 0;
+    top: 50%;
+
+    width: 100%;
     height: 4px;
 
     transform: translateY(-50%);
+}
+
+.lane-line.horizontal::before {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+
+    width: 35%;
+    height: 4px;
 
     background:
         repeating-linear-gradient(
             to right,
-            #9da9aa 0,
-            #9da9aa 9px,
+            var(--lane) 0px,
+            var(--lane) 9px,
             transparent 9px,
             transparent 18px
         );
-
-    opacity: 0.9;
 }
 
+.lane-line.horizontal::after {
+    content: "";
 
-/* =========================================================
-   INTERSECTION BOX / STOP LINES
-   ========================================================= */
-
-.intersection-box {
     position: absolute;
 
-    left: 50%;
-    top: 50%;
+    left: 65%;
+    top: 0;
 
-    width: 260px;
-    height: 205px;
+    width: 35%;
+    height: 4px;
 
-    transform: translate(-50%, -50%);
-
-    z-index: 4;
-
-    pointer-events: none;
+    background:
+        repeating-linear-gradient(
+            to right,
+            var(--lane) 0px,
+            var(--lane) 9px,
+            transparent 9px,
+            transparent 18px
+        );
 }
 
-
-/* stop lines */
+/* =========================================================
+   STOP LINES
+========================================================= */
 
 .stop-line {
     position: absolute;
 
+    z-index: 4;
+
     background: white;
 
-    z-index: 5;
+    pointer-events: none;
+
+    box-shadow:
+        0 0 3px rgba(255,255,255,0.4);
 }
 
-.stop-line.north {
-    left: 0;
-    right: 0;
+.north-stop {
+    left: 35%;
+    top: 34%;
 
-    top: 0;
-
+    width: 30%;
     height: 6px;
 }
 
-.stop-line.south {
-    left: 0;
-    right: 0;
+.south-stop {
+    left: 35%;
+    top: 65%;
 
-    bottom: 0;
-
+    width: 30%;
     height: 6px;
 }
 
-.stop-line.west {
-    top: 0;
-    bottom: 0;
-
-    left: 0;
+.west-stop {
+    left: 34%;
+    top: 35%;
 
     width: 6px;
+    height: 30%;
 }
 
-.stop-line.east {
-    top: 0;
-    bottom: 0;
-
-    right: 0;
+.east-stop {
+    left: 65%;
+    top: 35%;
 
     width: 6px;
+    height: 30%;
 }
-
 
 /* =========================================================
-   AI CENTER
-   ========================================================= */
+   AI NODE
+========================================================= */
 
-.ai-center {
+.ai-node {
     position: absolute;
 
     left: 50%;
     top: 50%;
 
-    width: 100px;
-    height: 100px;
+    z-index: 15;
+
+    width: 90px;
+    height: 90px;
 
     transform: translate(-50%, -50%);
 
-    display: flex;
+    display: grid;
 
-    align-items: center;
-    justify-content: center;
+    place-items: center;
 
-    border: 2px solid #18e7e0;
+    border: 2px solid var(--cyan);
 
     border-radius: 50%;
 
-    background: #031316;
+    background: #041317;
 
-    color: #4be8e1;
+    color: var(--cyan);
 
-    font-size: 22px;
+    font-size: 18px;
+
     font-weight: 800;
 
-    z-index: 20;
-
     box-shadow:
-        0 0 18px rgba(24,231,224,0.25);
-}
+        0 0 20px rgba(39,215,213,0.4);
 
+    pointer-events: none;
+}
 
 /* =========================================================
    TRAFFIC SIGNAL
-   ========================================================= */
+========================================================= */
 
-.traffic-signal {
+.signal {
     position: absolute;
 
-    width: 86px;
+    z-index: 25;
+
+    width: 78px;
     height: 38px;
+
+    padding: 5px 6px;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
-    gap: 6px;
+    gap: 5px;
 
-    padding: 5px 8px;
+    background: #162327;
 
-    border: 2px solid #566567;
+    border: 2px solid #627174;
 
-    border-radius: 13px;
-
-    background: #1b292b;
-
-    z-index: 25;
+    border-radius: 14px;
 
     box-shadow:
-        0 3px 10px rgba(0,0,0,0.35);
+        0 2px 8px rgba(0,0,0,0.45);
 }
 
-.traffic-signal .light {
-    width: 15px;
-    height: 15px;
+.signal i {
+    display: block;
+
+    width: 14px;
+    height: 14px;
+
+    flex: 0 0 14px;
 
     border-radius: 50%;
 
-    background: #344447;
+    background: #344244;
 
-    box-shadow: inset 0 0 3px rgba(0,0,0,0.4);
+    transition:
+        background 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
+/* =========================================================
+   SIGNAL COLORS
+========================================================= */
 
-/* active colors */
+.signal i.red,
+.signal i.yellow,
+.signal i.green {
+    background: #344244;
 
-.traffic-signal .red.active,
-.traffic-signal .red.on {
-    background: #ff4d52;
+    box-shadow: none;
+}
+
+.signal i.red.on {
+    background: var(--red) !important;
 
     box-shadow:
-        0 0 10px rgba(255,77,82,0.8);
+        0 0 12px var(--red) !important;
 }
 
-.traffic-signal .yellow.active,
-.traffic-signal .yellow.on {
-    background: #ffd447;
+.signal i.yellow.on {
+    background: var(--yellow) !important;
 
     box-shadow:
-        0 0 10px rgba(255,212,71,0.8);
+        0 0 12px var(--yellow) !important;
 }
 
-.traffic-signal .green.active,
-.traffic-signal .green.on {
-    background: #48e69b;
+.signal i.green.on {
+    background: var(--green) !important;
 
     box-shadow:
-        0 0 10px rgba(72,230,155,0.8);
+        0 0 12px var(--green) !important;
 }
-
 
 /* =========================================================
    SIGNAL POSITIONS
-   ========================================================= */
+========================================================= */
 
-.signal-north {
-    left: calc(50% + 150px);
-    top: 27%;
-
-    transform: translate(-50%, -50%);
+.north-signal {
+    top: 23%;
+    right: 17%;
 }
 
-.signal-south {
-    left: calc(50% - 150px);
-    top: 73%;
-
-    transform: translate(-50%, -50%);
+.south-signal {
+    bottom: 23%;
+    left: 17%;
 }
 
-.signal-west {
-    left: 22%;
-    top: calc(50% - 105px);
-
-    transform: translate(-50%, -50%);
+.east-signal {
+    right: 17%;
+    top: 69%;
 }
 
-.signal-east {
-    left: 78%;
-    top: calc(50% + 105px);
-
-    transform: translate(-50%, -50%);
+.west-signal {
+    left: 17%;
+    top: 23%;
 }
-
 
 /* =========================================================
-   CARS CONTAINER
-   ========================================================= */
+   CAR LAYER
+========================================================= */
 
 #cars {
     position: absolute;
@@ -553,23 +601,14 @@ button:active,
     width: 100%;
     height: 100%;
 
-    z-index: 50;
+    z-index: 10;
 
     pointer-events: none;
-
-    overflow: hidden;
 }
-
 
 /* =========================================================
    TRAFFIC CAR
-
-   IMPORTANT:
-   DO NOT rotate the emoji.
-
-   JavaScript controls position.
-   Emoji ALWAYS remains visually upright.
-   ========================================================= */
+========================================================= */
 
 .traffic-car {
     position: absolute;
@@ -577,32 +616,34 @@ button:active,
     width: 42px;
     height: 32px;
 
+    z-index: 10;
+
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
-    /*
-     * Only centering translation.
-     * NEVER rotate here.
-     */
-    transform: translate(-50%, -50%) !important;
-
-    transform-origin: center center;
-
-    z-index: 60;
+    padding: 0;
+    margin: 0;
 
     pointer-events: none;
 
+    /*
+     * IMPORTANT:
+     * Never animate the position.
+     * JavaScript controls left/top directly.
+     */
     transition: none !important;
+
+    animation: none !important;
 
     will-change: left, top;
 }
 
-
 /* =========================================================
    CAR EMOJI
-   ========================================================= */
+========================================================= */
 
 .car-emoji {
     display: block;
@@ -616,74 +657,81 @@ button:active,
         "Noto Color Emoji",
         sans-serif;
 
-    font-size: 28px;
+    font-size: 30px;
 
     line-height: 32px;
 
     text-align: center;
 
-    white-space: nowrap;
-
     user-select: none;
 
+    transform-origin: center center;
+
     /*
-     * THIS IS THE IMPORTANT PART.
-     *
-     * No rotation is applied regardless
-     * of the direction of travel.
+     * IMPORTANT:
+     * Do not rotate or mirror cars.
      */
     transform: none !important;
 
     rotate: none !important;
 
-    transform-origin: center center;
-}
+    scale: 1 !important;
 
+    transition: none !important;
+
+    animation: none !important;
+}
 
 /* =========================================================
-   ABSOLUTELY FORCE ALL DIRECTIONS TO STAY UPRIGHT
-   ========================================================= */
+   IMPORTANT CAR DIRECTION FIX
+========================================================= */
 
-.car-north,
-.car-south,
-.car-east,
-.car-west {
-    transform:
-        translate(-50%, -50%) !important;
-}
+/*
+   DO NOT ROTATE THE EMOJI.
 
-.car-north .car-emoji,
-.car-south .car-emoji,
+   Earlier CSS was doing this:
+
+   EAST  -> scaleX(-1)
+   NORTH -> rotate(90deg)
+   SOUTH -> rotate(-90deg)
+
+   That was causing the 🚗 emoji to appear upside down.
+
+   All four directions now remain visually upright.
+*/
+
+.car-west .car-emoji,
 .car-east .car-emoji,
-.car-west .car-emoji {
+.car-north .car-emoji,
+.car-south .car-emoji {
     transform: none !important;
-    rotate: none !important;
-}
 
+    rotate: none !important;
+
+    scale: 1 !important;
+
+    animation: none !important;
+
+    transition: none !important;
+}
 
 /* =========================================================
    EMERGENCY VEHICLE
-   ========================================================= */
+========================================================= */
 
 .emergency-car {
     position: absolute;
 
-    width: 45px;
-    height: 35px;
+    width: 46px;
+    height: 36px;
+
+    z-index: 40;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
-
-    transform:
-        translate(-50%, -50%) !important;
-
-    z-index: 100;
-
-    pointer-events: none;
-
-    transition: none !important;
 
     font-family:
         "Apple Color Emoji",
@@ -691,321 +739,270 @@ button:active,
         "Noto Color Emoji",
         sans-serif;
 
-    font-size: 30px;
+    font-size: 32px;
 
-    line-height: 35px;
+    line-height: 36px;
 
-    text-align: center;
-}
+    pointer-events: none;
 
-.emergency-car .car-emoji,
-.emergency-car span {
+    /*
+     * Never rotate emergency vehicle.
+     */
     transform: none !important;
+
     rotate: none !important;
+
+    scale: 1 !important;
+
+    transition: none !important;
+
+    animation: none !important;
 }
 
+.emergency-car .car-emoji {
+    transform: none !important;
+
+    rotate: none !important;
+
+    scale: 1 !important;
+
+    transition: none !important;
+
+    animation: none !important;
+}
 
 /* =========================================================
    EMERGENCY STATUS
-   ========================================================= */
+========================================================= */
 
 .emergency-status {
-    margin-top: 12px;
+    margin-top: 14px;
 
-    padding: 16px;
+    padding: 13px;
 
-    border-radius: 14px;
+    border-radius: 12px;
 
-    background: #071619;
+    background: #0d191c;
 
-    color: #9db1b3;
-
-    font-size: 16px;
+    color: var(--muted);
 }
 
 .emergency-status strong {
-    color: #f2f8f8;
+    color: #f4f8f8;
 }
-
-.emergency-active {
-    color: #ff6262 !important;
-}
-
 
 /* =========================================================
-   RIGHT SIDE CONTROLLER
-   ========================================================= */
+   METRICS
+========================================================= */
 
-.controller-panel {
-    min-height: 565px;
+.metrics-panel {
+    padding: 28px;
 }
 
-.controller-title {
-    margin: 0 0 30px;
-
-    font-size: 26px;
-    font-weight: 800;
-}
-
-.controller-row {
+.metric-row {
     display: flex;
 
-    justify-content: space-between;
     align-items: center;
 
-    padding: 23px 0;
+    justify-content: space-between;
 
-    border-bottom: 1px solid rgba(120,160,160,0.16);
+    min-height: 70px;
+
+    padding: 18px 0;
+
+    border-bottom: 1px solid #17383b;
+
+    color: #a6babb;
 }
 
-.controller-row .name {
-    color: #a8baba;
-
-    font-size: 17px;
-}
-
-.controller-row .number {
-    color: #35ddd7;
+.metric-row strong {
+    color: var(--cyan);
 
     font-size: 20px;
-    font-weight: 800;
 }
 
-
-/* =========================================================
-   SCORE FORMULA
-   ========================================================= */
-
-.score-formula {
-    margin: 24px 0;
+.formula {
+    margin: 22px 0;
 
     padding: 20px;
 
     border-radius: 14px;
 
-    background: #082c2b;
+    background: #0b2927;
 
-    color: #65d9d5;
+    color: #8ee8e0;
 
-    font-family:
-        "SFMono-Regular",
-        Consolas,
-        monospace;
+    font-family: monospace;
 
-    font-size: 16px;
+    font-size: 15px;
 }
 
-
-/* =========================================================
-   SELECTED DIRECTION
-   ========================================================= */
-
-.selected-direction {
+.decision {
     display: flex;
+
+    align-items: center;
 
     justify-content: space-between;
 
-    margin-top: 22px;
+    padding: 12px 0;
 
-    font-size: 17px;
+    color: #a6babb;
 }
 
-.selected-direction .value {
-    color: #2ce0da;
-
-    font-weight: 800;
+.decision strong {
+    color: var(--cyan);
 }
-
 
 /* =========================================================
-   TIMER
-   ========================================================= */
+   BOTTOM GRID
+========================================================= */
 
-.signal-timer {
+.bottom-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+
     margin-top: 20px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    font-size: 17px;
 }
 
-.signal-timer .value {
-    color: #2ce0da;
-
-    font-weight: 800;
+.bars > div {
+    margin: 18px 0;
 }
 
+.bars span {
+    display: block;
 
-/* =========================================================
-   CURRENT PHASE
-   ========================================================= */
+    color: var(--muted);
 
-.current-phase {
-    margin-top: 20px;
-
-    display: flex;
-
-    justify-content: space-between;
-
-    font-size: 17px;
+    margin-bottom: 6px;
 }
 
-.current-phase .value {
-    color: #2ce0da;
+.bar {
+    width: 100%;
+    height: 10px;
 
-    font-weight: 800;
+    overflow: hidden;
+
+    border-radius: 8px;
+
+    background: #102a2d;
 }
 
+.bar b {
+    display: block;
 
-/* =========================================================
-   CONGESTION
-   ========================================================= */
+    width: 0%;
+    height: 100%;
 
-.congestion-low {
-    color: #48e69b !important;
+    border-radius: 8px;
+
+    background: var(--cyan);
+
+    transition: width 0.25s ease;
 }
 
-.congestion-medium {
-    color: #ffd447 !important;
+ul {
+    padding-left: 20px;
 }
 
-.congestion-high {
-    color: #ff6262 !important;
-}
+li {
+    margin: 12px 0;
 
+    color: #a8bdbd;
+}
 
 /* =========================================================
    RESPONSIVE
-   ========================================================= */
+========================================================= */
 
 @media (max-width: 1100px) {
 
-    .stats-grid,
-    .metrics-grid {
-        grid-template-columns: repeat(3, 1fr);
+    .stats {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
     }
 
-    .main-grid {
+    .grid {
         grid-template-columns: 1fr;
-    }
-
-    .controller-panel {
-        min-height: auto;
     }
 }
 
+@media (max-width: 900px) {
 
-@media (max-width: 700px) {
+    .bottom-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .intersection {
+        height: 520px;
+    }
+
+    .panel-head {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 600px) {
+
+    .topbar {
+        padding: 20px;
+
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .stats {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
 
     .container {
-        width: 96%;
-        padding-top: 20px;
-    }
-
-    header h1 {
-        font-size: 30px;
-    }
-
-    .stats-grid,
-    .metrics-grid {
-        grid-template-columns: repeat(2, 1fr);
+        padding: 0 12px;
     }
 
     .panel {
         padding: 16px;
     }
 
-    .panel-header {
-        flex-direction: column;
-
-        align-items: flex-start;
-    }
-
-    .intersection-container,
     .intersection {
-        height: 500px;
+        height: 450px;
     }
 
-    .road.vertical {
-        width: 150px;
+    .signal {
+        transform: scale(0.8);
     }
 
-    .road.horizontal {
-        height: 175px;
-    }
-
-    .intersection-box {
-        width: 220px;
-        height: 175px;
-    }
-
-    .ai-center {
-        width: 82px;
-        height: 82px;
-
-        font-size: 18px;
-    }
-
-    .traffic-signal {
-        transform: scale(0.85);
-    }
-}
-
-
-@media (max-width: 480px) {
-
-    .stats-grid,
-    .metrics-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .intersection-container,
-    .intersection {
-        height: 430px;
-    }
-
-    .traffic-car {
-        width: 38px;
-        height: 30px;
+    .ai-node {
+        width: 75px;
+        height: 75px;
     }
 
     .car-emoji {
-        width: 38px;
-        height: 30px;
+        font-size: 27px;
 
-        font-size: 25px;
-        line-height: 30px;
+        transform: none !important;
+
+        rotate: none !important;
     }
 }
 
+@media (max-width: 430px) {
 
-/* =========================================================
-   FINAL OVERRIDE
-   =========================================================
+    .stats {
+        grid-template-columns: 1fr;
+    }
 
-   This is intentionally at the VERY END.
+    .intersection {
+        height: 400px;
+    }
 
-   No class or JavaScript direction can rotate
-   the actual car emoji.
-
-========================================================= */
-
-.traffic-car,
-.traffic-car.car-north,
-.traffic-car.car-south,
-.traffic-car.car-east,
-.traffic-car.car-west {
-    transform: translate(-50%, -50%) !important;
-}
-
-.traffic-car .car-emoji,
-.traffic-car.car-north .car-emoji,
-.traffic-car.car-south .car-emoji,
-.traffic-car.car-east .car-emoji,
-.traffic-car.car-west .car-emoji,
-.emergency-car .car-emoji {
-    transform: none !important;
-    rotate: 0deg !important;
+    .stat strong {
+        font-size: 25px;
+    }
 }
